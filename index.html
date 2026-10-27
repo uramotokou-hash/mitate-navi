@@ -1,0 +1,1198 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="WISC-V・IV・IIIの報告書の数値から、力のバランスと学校・家庭での手立てを読み取る先生向けの参考ツール（無料・登録不要）。">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>知能検査 見立てナビ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=BIZ+UDPMincho:wght@700&display=swap">
+</head>
+<body>
+<style>
+/* Layout: 検査記録用紙を思わせる罫線と方眼。左に入力、右に見立て（スマホは縦1列） */
+:root{
+  --bg:#eef2f5; --surface:#ffffff; --sunk:#f6f8fa; --ink:#1c2632; --muted:#5a6776; --line:#d3dbe3;
+  --accent:#1d5a86; --accent-ink:#ffffff; --band:#dde8f1;
+  --strong:#24734f; --strong-bg:#e3f2ea; --weak:#a8571a; --weak-bg:#fbeee2; --warn:#8a6d00; --warn-bg:#fbf4d9;
+  --f-body:"BIZ UDPGothic","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;
+  --f-disp:"BIZ UDPMincho","Hiragino Mincho ProN","Yu Mincho",serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11161c; --surface:#19212a; --sunk:#141a21; --ink:#e4eaf0; --muted:#9aa7b4; --line:#2b3642;
+  --accent:#74b3e0; --accent-ink:#0d1620; --band:#1f2d3a;
+  --strong:#5ec795; --strong-bg:#173126; --weak:#e8a46a; --weak-bg:#35251a; --warn:#e2c45a; --warn-bg:#302a14; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11161c; --surface:#19212a; --sunk:#141a21; --ink:#e4eaf0; --muted:#9aa7b4; --line:#2b3642;
+  --accent:#74b3e0; --accent-ink:#0d1620; --band:#1f2d3a;
+  --strong:#5ec795; --strong-bg:#173126; --weak:#e8a46a; --weak-bg:#35251a; --warn:#e2c45a; --warn-bg:#302a14; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.7;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.app{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 20px;border-bottom:2px solid var(--ink);padding-bottom:10px}
+header.top h1{font-family:var(--f-disp);font-size:1.75rem;margin:0;letter-spacing:.04em;line-height:1.2}
+header.top p{margin:0;color:var(--muted);font-size:.9rem}
+.vers-tag{font-size:.78rem;letter-spacing:.08em;color:var(--muted)}
+nav.tabs{display:flex;gap:4px;overflow-x:auto}
+nav.tabs button{flex:0 0 auto;font:inherit;font-weight:700;background:transparent;color:var(--muted);border:1px solid transparent;border-bottom:none;padding:8px 16px;border-radius:8px 8px 0 0;cursor:pointer}
+nav.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);border-color:var(--line)}
+nav.tabs{border-bottom:1px solid var(--line)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px}
+.grid{display:grid;grid-template-columns:minmax(0,390px) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:880px){.grid{grid-template-columns:minmax(0,1fr)}}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+h2{font-size:1.05rem;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+h2 .step{display:inline-grid;place-items:center;width:1.6em;height:1.6em;border-radius:50%;background:var(--ink);color:var(--surface);font-size:.8rem}
+h3{font-size:.95rem;margin:0}
+.muted{color:var(--muted)} .small{font-size:.85rem}
+.records{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:.88rem;border:1px solid var(--line);background:var(--sunk);color:var(--ink);border-radius:999px;padding:5px 12px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+.chip[aria-pressed="true"] .muted{color:inherit;opacity:.85}
+.chip.add{border-style:dashed;background:transparent}
+.row{display:flex;flex-wrap:wrap;gap:10px}
+.row > label{flex:1 1 140px}
+label.fld{display:flex;flex-direction:column;gap:4px;font-size:.85rem;color:var(--muted)}
+input[type=text],input[type=number]{font:inherit;color:var(--ink);background:var(--sunk);border:1px solid var(--line);border-radius:6px;padding:7px 10px;width:100%;min-width:0}
+input[type=number]{font-variant-numeric:tabular-nums;text-align:right;font-weight:700;font-size:1.05rem}
+input.bad{border-color:var(--weak);background:var(--weak-bg)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{font:inherit;font-weight:700;background:var(--sunk);color:var(--muted);border:none;border-left:1px solid var(--line);padding:10px 4px;cursor:pointer;line-height:1.3}
+.seg button:first-child{border-left:none}
+.seg button small{display:block;font-weight:400;font-size:.72rem}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.scoregrid{display:grid;grid-template-columns:minmax(0,1fr) 88px;gap:6px 10px;align-items:center}
+.scoregrid .nm{font-size:.92rem;line-height:1.35}
+.scoregrid .nm small{display:block;color:var(--muted);font-size:.75rem}
+.scoregrid .sep{grid-column:1/-1;border-top:1px dashed var(--line);margin:4px 0}
+.grp{margin-top:10px}
+.grp h4{margin:0 0 6px;font-size:.82rem;letter-spacing:.06em;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:3px}
+.tagsec{font-size:.7rem;border:1px solid var(--line);border-radius:4px;padding:0 4px;margin-left:4px;color:var(--muted)}
+details.sub > summary{cursor:pointer;font-weight:700;list-style:none;display:flex;justify-content:space-between;align-items:center}
+details.sub > summary::-webkit-details-marker{display:none}
+details.sub > summary::after{content:"＋";color:var(--muted)}
+details.sub[open] > summary::after{content:"－"}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.btn{font:inherit;font-weight:700;font-size:.88rem;border:1px solid var(--line);background:var(--sunk);color:var(--ink);border-radius:8px;padding:7px 14px;cursor:pointer}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.danger{color:var(--weak);border-color:var(--weak)}
+.summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.summary > div{background:var(--surface);padding:12px 14px;min-width:0}
+.summary .k{font-size:.78rem;color:var(--muted);letter-spacing:.04em}
+.summary .v{font-size:1.9rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
+.summary .d{font-size:.85rem}
+@media (max-width:520px){.summary{grid-template-columns:minmax(0,1fr)}}
+.chartbox{overflow-x:auto}
+.chartbox svg{display:block;width:100%;height:auto;min-width:520px}
+svg .ax{stroke:var(--line)} svg .band{fill:var(--band)} svg .ctr{stroke:var(--muted);stroke-dasharray:3 3}
+svg .mean{stroke:var(--accent);stroke-dasharray:6 4;stroke-width:1.5}
+svg .tk{fill:var(--muted);font-size:12px;font-family:var(--f-body)}
+svg .lb{fill:var(--ink);font-size:14px;font-weight:700;font-family:var(--f-body)}
+svg .val{fill:var(--ink);font-size:14px;font-weight:700;font-family:var(--f-body)}
+svg .ln{stroke:var(--ink);stroke-width:2;fill:none}
+svg .pt{fill:var(--surface);stroke:var(--ink);stroke-width:2}
+svg .pt.s{fill:var(--strong);stroke:var(--strong)} svg .pt.w{fill:var(--weak);stroke:var(--weak)}
+svg .full{fill:var(--accent);stroke:var(--accent)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.8rem;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:middle}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.card{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--surface);display:flex;flex-direction:column;gap:6px;min-width:0}
+.card.s{border-left:5px solid var(--strong)} .card.w{border-left:5px solid var(--weak)}
+.card .hd{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.card .sc{font-size:1.6rem;font-weight:700;font-variant-numeric:tabular-nums}
+.badge{display:inline-block;font-size:.75rem;font-weight:700;border-radius:4px;padding:1px 7px;white-space:nowrap}
+.badge.s{background:var(--strong-bg);color:var(--strong)} .badge.w{background:var(--weak-bg);color:var(--weak)}
+.badge.n{background:var(--sunk);color:var(--muted);border:1px solid var(--line)}
+.badge.c{background:var(--warn-bg);color:var(--warn)}
+.card ul{margin:0;padding-left:1.2em;font-size:.88rem}
+.card .lead{font-size:.85rem;color:var(--muted)}
+.card .subh{font-size:.8rem;font-weight:700;margin-top:4px}
+.note{background:var(--warn-bg);color:var(--ink);border-radius:8px;padding:10px 12px;font-size:.88rem;border-left:4px solid var(--warn)}
+.note b{color:var(--warn)}
+.pairs{display:flex;flex-direction:column;gap:6px;font-size:.9rem}
+.pairs div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dotted var(--line);padding-bottom:4px}
+.pairs > div > span:first-child{min-width:0}
+.pairs > div > span:last-child{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+textarea{font:inherit;font-size:.9rem;width:100%;min-height:260px;background:var(--sunk);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:12px;line-height:1.75;resize:vertical}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:560px}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+thead th{background:var(--sunk);font-size:.82rem;letter-spacing:.03em}
+td.num{font-variant-numeric:tabular-nums;font-weight:700}
+.empty{padding:28px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:10px}
+.prose{max-width:68ch}
+.prose h3{margin:18px 0 6px}
+.prose ul{padding-left:1.3em}
+.mini{display:inline-block;height:8px;background:var(--accent);border-radius:2px;vertical-align:middle;margin-left:6px}
+footer{font-size:.8rem;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.doms{display:flex;flex-direction:column;gap:10px}
+details.dom{border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:var(--surface)}
+details.dom > summary{cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;list-style:none}
+details.dom > summary::-webkit-details-marker{display:none}
+details.dom > summary .num{font-variant-numeric:tabular-nums;font-weight:700}
+.ideas-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;margin-top:10px}
+@media (max-width:640px){.ideas-grid{grid-template-columns:minmax(0,1fr)}}
+.side-h{font-weight:700;border-bottom:2px solid var(--ink);padding-bottom:2px}
+.scn{margin-top:8px} .scn h5{margin:0 0 2px;font-size:.78rem;color:var(--muted);letter-spacing:.06em}
+.ck{display:flex;gap:8px;align-items:flex-start;font-size:.9rem;padding:3px 0;cursor:pointer;line-height:1.5}
+.ck input{margin-top:.25em;width:18px;height:18px;flex:0 0 auto;accent-color:var(--accent)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.fact{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--sunk)}
+.fact .k{font-size:.78rem;color:var(--muted);letter-spacing:.06em} .fact .v{font-weight:700}
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.flow > div{border-top:3px solid var(--accent);background:var(--sunk);padding:8px 12px;border-radius:0 0 8px 8px}
+.struct{display:flex;flex-direction:column;gap:10px}
+.struct .top{align-self:center;text-align:center;background:var(--accent);color:var(--accent-ink);padding:6px 18px;border-radius:8px;font-weight:700}
+.struct .ix{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.ixb{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--sunk)} .ixb b{display:block}
+.sx{display:inline-block;font-size:.8rem;border:1px solid var(--ink);border-radius:4px;padding:0 6px;margin:2px 3px 0 0;background:var(--surface)}
+.sx.sec{border:1px dashed var(--muted);color:var(--muted)}
+.subx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.subx{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.subx dl{margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 10px;font-size:.84rem}
+.subx dt{color:var(--muted)} .subx dd{margin:0}
+
+:root{--c1:#1d5a86;--c2:#b0601f;--c3:#2f7d55;--c4:#7a4fa0}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--c1:#74b3e0;--c2:#e8a46a;--c3:#5ec795;--c4:#c39be6}}
+:root[data-theme="dark"]{--c1:#74b3e0;--c2:#e8a46a;--c3:#5ec795;--c4:#c39be6}
+.howto{background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:.9rem;display:flex;flex-direction:column;gap:6px}
+.howto p{margin:0}
+.ck-demo{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:4px;background:var(--accent);color:var(--accent-ink);font-size:.75rem;font-weight:700;vertical-align:-3px}
+.pick-sum{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 14px;align-items:baseline;margin-top:10px;font-size:.92rem}
+.ck .ck-t{flex:1 1 auto;min-width:0}
+.ck .ck-on{flex:0 0 auto;font-size:.72rem;font-weight:700;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:0 7px;visibility:hidden;white-space:nowrap;margin-top:.15em}
+.ck input:checked ~ .ck-on{visibility:visible}
+.ck input:not(:checked) ~ .ck-t{color:var(--muted)}
+.opts{display:flex;flex-direction:column;gap:2px;margin-top:10px}
+ol.steps{padding-left:1.4em;display:flex;flex-direction:column;gap:6px}
+dl.gloss{display:grid;grid-template-columns:minmax(0,13em) minmax(0,1fr);gap:6px 14px;margin:0}
+dl.gloss dt{font-weight:700} dl.gloss dd{margin:0}
+@media (max-width:560px){dl.gloss{grid-template-columns:minmax(0,1fr)} dl.gloss dd{margin-bottom:6px}}
+ul.refs li{margin-bottom:6px} ul.refs a{color:var(--accent);font-weight:700}
+.psheet{gap:9px}
+.p-sum{border:2px solid #1d5a86;border-radius:8px;padding:8px 12px;background:#f3f7fb}
+.p-sum-k{font-size:11px;font-weight:700;letter-spacing:.1em;color:#1d5a86;margin-bottom:2px}
+.p-sum p{font-size:13px;line-height:1.6;font-weight:700}
+.p-two{display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:11px;line-height:1.5;margin-bottom:8px}
+.p-two > div{background:#f1f4f7;border-radius:6px;padding:6px 10px}
+.pr{display:flex;flex-direction:column;gap:3px}
+.pr-row{display:grid;grid-template-columns:200px minmax(0,1fr) 74px;gap:10px;align-items:center}
+.pr-lab b{display:block;font-size:12.5px;line-height:1.3} .pr-lab small{display:block;font-size:9.5px;color:#5a6776;line-height:1.35}
+.rl{position:relative;display:flex;height:20px;gap:2px}
+.rl i{display:block;background:#eef2f6;border-radius:3px} .rl i.mid{background:#d6e3ef}
+.rl .mk{position:absolute;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:#1c2632;border:3px solid #ffffff;box-shadow:0 0 0 1.5px #1c2632}
+.rl .mk.s{background:#24734f;box-shadow:0 0 0 1.5px #24734f} .rl .mk.w{background:#b0601f;box-shadow:0 0 0 1.5px #b0601f} .rl .mk.f{background:#1d5a86;box-shadow:0 0 0 1.5px #1d5a86}
+.rl-h{display:flex;gap:2px;font-size:9.5px;color:#5a6776;line-height:1.25;text-align:center}
+.rl-h span{display:flex;align-items:flex-end;justify-content:center} .rl-h small{font-size:8.5px}
+.pr-head{margin-bottom:-2px}
+.pr-r{display:flex;flex-direction:column;align-items:center;gap:1px} .pr-r small{font-size:9.5px;color:#5a6776}
+.ptag{display:inline-block;font-size:10.5px;font-weight:700;border-radius:4px;padding:1px 7px}
+.ptag.s{background:#e3f2ea;color:#24734f} .ptag.w{background:#fbeee2;color:#a8571a} .ptag.n{color:#8a97a6}
+.p-qa{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:10.5px;line-height:1.5}
+.p-qa > div{border:1px dashed #c9d2dc;border-radius:6px;padding:6px 9px} .p-qa b{display:block;font-size:11px;margin-bottom:2px}
+.t-pts{border:2px solid #1d5a86;border-radius:8px;padding:7px 12px;background:#f3f7fb}
+.t-pts ul{font-size:10.5px;line-height:1.45}
+.t-lines i{display:block;height:24px;border-bottom:1px solid #c9d2dc}
+.t-home{border:2px solid #2f8a4a;border-radius:8px;padding:7px 12px 9px;background:#f6fbf7}
+.sheet .t-home h2{border-left-color:#2f8a4a;color:#1c4a2a}
+.t-home .sh-ideas .dh{color:#2f6b3f}
+.t-home-w{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px;font-size:10.5px}
+.t-home-w .t-lines i{height:20px}
+.t-hint{font-size:10px;color:#5a6776;margin:-2px 0 5px}
+.gsheet{gap:8px;font-size:11.5px;line-height:1.5}
+.g-top{display:flex;align-items:center;gap:14px}
+.g-ttl{flex:1;text-align:center} .sheet .g-ttl h1{font-family:"BIZ UDPGothic",sans-serif;font-weight:700;font-size:30px;color:#14325a;letter-spacing:.02em}
+.g-ttl p{font-size:15px;font-weight:700;color:#1d5a86;margin-top:2px}
+.sheet .g-info{border-collapse:separate;border-spacing:0;width:100%;border:1.5px solid #1d5a86;border-radius:8px;overflow:hidden;font-size:11.5px}
+.sheet .g-info th{background:#e3eef8;color:#14325a;padding:5px 10px;width:64px;border-bottom:1px solid #c9d7e6;text-align:center}
+.sheet .g-info td{padding:5px 10px;border-bottom:1px solid #c9d7e6;color:#1c2632}
+.sheet .g-info tr:last-child th,.sheet .g-info tr:last-child td{border-bottom:none}
+.g-cau{text-align:center;font-size:10.5px;color:#5a6776;margin-top:-4px!important}
+.sheet h2.g-h{display:flex;align-items:center;gap:8px;border-left:none;padding-left:0;font-size:16px;color:#14325a;margin-bottom:6px}
+.g-flow-wrap{display:grid;grid-template-columns:240px 1fr;gap:12px;align-items:center}
+.g-scene p{font-size:10.5px;line-height:1.5;margin-top:4px}
+.g-flow{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.g-flow li{display:flex;gap:8px;align-items:flex-start;border:1px solid #c9d7e6;border-radius:8px;padding:6px 8px;background:#ffffff;counter-increment:gf}
+.g-flow li b{display:block;font-size:12px;color:#14325a} .g-flow li b::before{content:counter(gf) " ";color:#1d5a86}
+.g-flow li span{font-size:10.5px;line-height:1.45}
+.g-flow{counter-reset:gf}
+.sheet .g-tbl{border-collapse:separate;border-spacing:0;width:100%;border:1.5px solid #2f8a4a;border-radius:8px;overflow:hidden;font-size:11px}
+.sheet .g-tbl th{background:#e6f3ea;color:#1c4a2a;padding:5px 8px;font-size:11.5px;border-bottom:1px solid #b9d9c3;border-right:1px solid #d5e8db}
+.sheet .g-tbl td{padding:4px 8px;border-bottom:1px solid #d5e8db;border-right:1px solid #e5efe8;vertical-align:middle;color:#1c2632;line-height:1.45}
+.sheet .g-tbl tr:last-child td{border-bottom:none}
+.g-tbl .gi{display:grid;grid-template-columns:20px 32px 1fr;grid-template-rows:auto auto;align-items:center;column-gap:4px}
+.g-tbl .gi .gn{grid-row:1/3;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;color:#ffffff;font-weight:700;font-size:11px}
+.g-tbl .gi svg{grid-row:1/3} .g-tbl .gi b{font-size:12.5px;line-height:1.25} .g-tbl .gi small{font-size:10px;color:#5a6776}
+.g-tbl td.gsub{font-size:10.5px;color:#3a4654}
+.g-two{display:grid;grid-template-columns:1.25fr 1fr;gap:12px;align-items:stretch}
+.sheet .g-num{border-collapse:collapse;width:100%;font-size:11px}
+.sheet .g-num th{background:#e3eef8;color:#14325a;padding:3px 8px;border:1px solid #c9d7e6}
+.sheet .g-num td{padding:3px 8px;border:1px solid #c9d7e6;color:#1c2632}
+.g-small{font-size:10px;color:#5a6776;margin-top:3px!important}
+.g-star{display:flex;align-items:center;gap:10px;background:#fff7df;border:1.5px solid #e9c25a;border-radius:10px;padding:10px 14px;font-size:13px;line-height:1.6;font-weight:700}
+.g-star b{color:#14325a}
+.g-box{border:1.5px solid #1d5a86;border-radius:8px;padding:7px 12px}
+.g-box h3{font-size:12.5px;color:#14325a;margin-bottom:3px} .g-box p{font-size:10.5px;margin-bottom:2px!important} .g-box p b{color:#1d5a86;margin-right:6px}
+.g-box ul{font-size:10.5px}
+.g-end{display:flex;align-items:center;gap:12px;background:#f4f8ec;border:1.5px solid #9cc27a;border-radius:10px;padding:9px 14px;font-size:12px;line-height:1.6}
+.g-end b{color:#2f6b1f;font-size:13px}
+/* ===== A4シート（印刷用：テーマに関係なく紙の色で固定） ===== */
+.pv{background:var(--sunk);border:1px solid var(--line);border-radius:8px;overflow:hidden;position:relative;margin-top:10px}
+.pv-in{width:794px;transform-origin:top left;position:absolute;left:0;top:0}
+.sheetHost{position:absolute;left:-12000px;top:0;width:794px;pointer-events:none}
+.sheet{width:794px;min-height:1123px;background:#ffffff;color:#1c2632;font-family:"BIZ UDPGothic","Hiragino Sans","Meiryo",sans-serif;font-size:12.5px;line-height:1.6;padding:32px 44px 26px;display:flex;flex-direction:column;gap:13px;box-sizing:border-box;color-scheme:light}
+.sheet h1{font-family:"BIZ UDPMincho","Hiragino Mincho ProN",serif;font-size:23px;margin:0;line-height:1.3;letter-spacing:.03em;color:#1c2632}
+.sheet h2{display:block;font-size:14px;margin:0 0 6px;padding-left:8px;border-left:4px solid #1d5a86;line-height:1.35;color:#1c2632}
+.sheet h3{font-size:12.5px;margin:0 0 4px;color:#1c2632}
+.sheet p{margin:0} .sheet ul{margin:0;padding-left:1.25em} .sheet li{margin:1px 0}
+.sheet table{min-width:0;width:auto}
+.sh-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;border-bottom:2.5px solid #1c2632;padding-bottom:8px}
+.sh-kicker{font-size:11px;letter-spacing:.12em;color:#5a6776}
+.sheet .sh-meta{border-collapse:collapse;font-size:11px}
+.sheet .sh-meta td{border:none;padding:0 0 0 10px;color:#1c2632;vertical-align:top}
+.sheet .sh-meta td:first-child{color:#5a6776}
+.sh-two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.sh-box{border:1px solid #c9d2dc;border-radius:6px;padding:9px 12px}
+.sh-box.s{border-top:4px solid #24734f} .sh-box.w{border-top:4px solid #b0601f}
+.sh-note{background:#f1f4f7;border-radius:6px;padding:8px 11px;font-size:11.5px;color:#1c2632}
+.hb{display:flex;flex-direction:column;gap:5px}
+.hb-row{display:grid;align-items:center;gap:10px}
+.hb-lab{font-weight:700;font-size:12px;line-height:1.25} .hb-lab small{display:block;font-weight:400;color:#5a6776;font-size:10px}
+.hb-tr{position:relative;height:18px;background:#f5f7f9;border-radius:3px}
+.hb-band{position:absolute;top:0;bottom:0;background:#dde7f1}
+.hb-ctr{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:#5a6776}
+.hb-bar{position:absolute;top:4px;height:10px;border-radius:2px;background:#8a9bb0}
+.hb-bar.s{background:#24734f} .hb-bar.w{background:#b0601f} .hb-bar.f{background:#1d5a86}
+.hb-val{font-weight:700;font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.hb-val small{font-size:10px}
+.hb-ax{position:relative;height:13px;font-size:9.5px;color:#5a6776} .hb-ax span{position:absolute;transform:translateX(-50%)}
+.hb-grp{font-size:10.5px;color:#5a6776;font-weight:700;border-bottom:1px solid #e2e7ed;margin-top:2px}
+.sheet .sh-tbl{border-collapse:collapse;width:100%;font-size:11px}
+.sheet .sh-tbl th,.sheet .sh-tbl td{border:1px solid #c9d2dc;padding:3px 7px;color:#1c2632;background:#ffffff}
+.sheet .sh-tbl th{background:#edf1f5;font-weight:700;font-size:10.5px}
+.sheet .sh-tbl td.n{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.sh-memo{white-space:pre-wrap;font-size:11px;line-height:1.65;border:1px solid #c9d2dc;border-radius:6px;padding:8px 11px}
+.sh-kpi{display:flex;gap:8px;flex-wrap:wrap} .sh-kpi div{border:1px solid #c9d2dc;border-radius:6px;padding:3px 10px;font-size:11px}
+.sh-kpi b{font-size:16px;margin-left:6px}
+.sh-flag{color:#8a5a00;font-weight:700}
+.sh-foot{margin-top:auto;border-top:1px solid #c9d2dc;padding-top:6px;font-size:10px;color:#5a6776;display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+.compact .hb{gap:1px} .compact .hb-tr{height:13px} .compact .hb-bar{top:2px;height:9px}
+.compact .hb-lab{font-size:11px} .compact .hb-val{font-size:12.5px} .compact .hb-grp{margin-top:1px;font-size:10px}
+.sheet.compact .sh-tbl th,.sheet.compact .sh-tbl td{padding:2px 7px}
+.compact .sh-memo{column-count:2;column-gap:20px;font-size:10.5px;line-height:1.55}
+.sh-act{display:grid;gap:6px}
+.sh-act div{border:1px solid #c9d2dc;border-radius:6px;padding:5px 8px;font-size:10.5px;line-height:1.45}
+.sh-act b{display:block;font-size:11px;color:#1d5a86}
+.sh-ideas{column-count:2;column-gap:18px;font-size:10.5px;line-height:1.4}
+.sh-ideas p{margin:0 0 1px;break-inside:avoid} .sh-ideas .dh{margin-top:3px;color:#1d5a86;break-after:avoid}
+.sh-sign{display:inline-block;min-width:150px;border-bottom:1px solid #1c2632;color:#1c2632;font-size:11.5px;padding:0 4px}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<div class="app">
+  <header class="top">
+    <div>
+      <div class="vers-tag">WISC-V ／ WISC-IV ／ WISC-III 対応</div>
+      <h1>知能検査 見立てナビ</h1>
+    </div>
+    <p>報告書の数値を入れると、得意・苦手の傾向と支援の手立てが見えてきます。</p>
+  </header>
+
+  <div class="note" style="margin:0"><b>ご利用にあたって：</b>このアプリは、先生が検査の報告書を読み取るための参考ツールとして、個人が作成したものです。診断や、専門家（検査者）の解釈に代わるものではありません。表示される見立てや手立ては一般的な目安で、正確さを保証するものではありません。ご利用は各自の責任でお願いします。このアプリの利用によって生じた結果について、作成者は責任を負いかねます。</div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="mitate" aria-selected="true">見立て</button>
+    <button role="tab" data-tab="image" aria-selected="false">検査のイメージ</button>
+    <button role="tab" data-tab="hikaku" aria-selected="false">版をまたいだ比較</button>
+    <button role="tab" data-tab="taiou" aria-selected="false">版の対応表</button>
+    <button role="tab" data-tab="guide" aria-selected="false">読み方・参考文献</button>
+  </nav>
+
+  <section id="tab-mitate">
+    <div class="grid">
+      <div class="col">
+        <div class="panel">
+          <h2><span class="step">1</span>記録をえらぶ</h2>
+          <div class="records" id="records"></div>
+          <div class="row" style="margin-top:12px">
+            <label class="fld">記録名（イニシャルやIDで）<input type="text" id="recLabel" placeholder="例：A-1"></label>
+            <label class="fld">実施時期<input type="text" id="recDate" placeholder="例：2026年10月・小3"></label>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <label class="fld">作成者（記録者・本名でかまいません）<input type="text" id="author" autocomplete="name" placeholder="例：浦元 康（特別支援学級担任）"></label>
+          </div>
+          <p class="small muted" style="margin:8px 0 0">お子さんの名前は入れず、イニシャルやIDで管理してください（作成者の欄は本名でかまいません）。入力内容はこの端末のブラウザ内だけに保存されます。</p>
+        </div>
+
+        <div class="panel">
+          <h2><span class="step">2</span>検査の版</h2>
+          <div class="seg" id="verSeg">
+            <button data-v="V">WISC-V<small>日本版 2022〜</small></button>
+            <button data-v="IV">WISC-IV<small>日本版 2010〜</small></button>
+            <button data-v="III">WISC-III<small>日本版 1998〜</small></button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2><span class="step">3</span>合成得点（IQ・指標得点）</h2>
+          <p class="small muted" style="margin:0 0 10px">平均100・標準偏差15。報告書の数値をそのまま入れます。</p>
+          <div class="scoregrid" id="compInputs"></div>
+        </div>
+
+        <div class="panel">
+          <details class="sub" id="subDetails">
+            <summary><span><span class="step" style="display:inline-grid;place-items:center;width:1.6em;height:1.6em;border-radius:50%;background:var(--ink);color:var(--surface);font-size:.8rem;margin-right:8px">4</span>評価点（下位検査）<span class="muted small">　任意</span></span></summary>
+            <p class="small muted" style="margin:8px 0 0">平均10・標準偏差3（1〜19）。分かる分だけで大丈夫です。</p>
+            <div id="subInputs"></div>
+          </details>
+        </div>
+
+        <div class="panel">
+          <h3>記録の操作</h3>
+          <div class="btnrow">
+            <button class="btn" id="btnDup">この記録を複製</button>
+            <button class="btn" id="btnClear">数値をすべて消す</button>
+            <button class="btn danger" id="btnDel">記録を削除</button>
+          </div>
+          <div id="confirmBox" class="note" style="margin-top:10px" hidden></div>
+        </div>
+      </div>
+
+      <div class="col" id="results"></div>
+    </div>
+  </section>
+
+  <section id="tab-image" hidden><div class="col"><div class="panel" id="gsPanel"></div><div class="panel" id="imagePanel"></div></div></section>
+  <section id="tab-hikaku" hidden><div class="panel" id="compare"></div></section>
+  <section id="tab-taiou" hidden><div class="panel" id="taiou"></div></section>
+  <section id="tab-guide" hidden><div class="panel prose" id="guide"></div></section>
+
+  <div id="sheetHost" class="sheetHost" aria-hidden="true"></div>
+  <footer><b>ご利用にあたって：</b>このアプリは、先生が検査の報告書を読み取るための参考ツールとして、個人が作成したものです。診断や、専門家（検査者）の解釈に代わるものではありません。表示される見立てや手立ては一般的な目安で、正確さを保証するものではありません。ご利用は各自の責任でお願いします。このアプリの利用によって生じた結果について、作成者は責任を負いかねます。<br>検査の解釈は、検査者の所見・行動観察・生育歴・学習の様子と合わせて行ってください。<br>WISC、Wechslerは、NCS Pearson, Inc.の商標または登録商標です。このアプリは、検査の発行元・日本版の刊行元とは関係がありません。</footer>
+</div>
+
+<script>
+/* ===== データ：版ごとの構成 ===== */
+const VERS={
+  V:{label:'WISC-V',full:{id:'FSIQ',name:'全検査IQ',short:'FSIQ'},iq:[],
+    idx:[{id:'VCI',name:'言語理解指標',short:'言語理解',dom:'VC',axis:'lang'},
+         {id:'VSI',name:'視空間指標',short:'視空間',dom:'VS',axis:'perc'},
+         {id:'FRI',name:'流動性推理指標',short:'流動性推理',dom:'FR',axis:'perc'},
+         {id:'WMI',name:'ワーキングメモリー指標',short:'WM',dom:'WM',axis:'wm'},
+         {id:'PSI',name:'処理速度指標',short:'処理速度',dom:'PS',axis:'ps'}],
+    extra:[{id:'GAI',name:'一般知的能力指標（GAI）'},{id:'CPI',name:'認知熟達度指標（CPI）'}],
+    subs:[['SI','VCI',1],['VC','VCI',1],['IN','VCI',0],['CO','VCI',0],
+          ['BD','VSI',1],['VP','VSI',1],
+          ['MR','FRI',1],['FW','FRI',1],['PCn','FRI',0],['AR','FRI',0],
+          ['DS','WMI',1],['PSp','WMI',1],['LN','WMI',0],
+          ['CD','PSI',1],['SS','PSI',1],['CA','PSI',0]]},
+  IV:{label:'WISC-IV',full:{id:'FSIQ',name:'全検査IQ',short:'FSIQ'},iq:[],
+    idx:[{id:'VCI',name:'言語理解指標',short:'言語理解',dom:'VC',axis:'lang'},
+         {id:'PRI',name:'知覚推理指標',short:'知覚推理',dom:'PR',axis:'perc'},
+         {id:'WMI',name:'ワーキングメモリー指標',short:'WM',dom:'WM',axis:'wm'},
+         {id:'PSI',name:'処理速度指標',short:'処理速度',dom:'PS',axis:'ps'}],
+    extra:[{id:'GAI',name:'一般知的能力指標（GAI）'},{id:'CPI',name:'認知熟達度指標（CPI）'}],
+    subs:[['SI','VCI',1],['VC','VCI',1],['CO','VCI',1],['IN','VCI',0],['WR','VCI',0],
+          ['BD','PRI',1],['PCn','PRI',1],['MR','PRI',1],['PCm','PRI',0],
+          ['DS','WMI',1],['LN','WMI',1],['AR','WMI',0],
+          ['CD','PSI',1],['SS','PSI',1],['CA','PSI',0]]},
+  III:{label:'WISC-III',full:{id:'FIQ',name:'全検査IQ',short:'FIQ'},
+    iq:[{id:'VIQ',name:'言語性IQ'},{id:'PIQ',name:'動作性IQ'}],
+    idx:[{id:'VC',name:'言語理解（群指数）',short:'言語理解',dom:'VC',axis:'lang'},
+         {id:'PO',name:'知覚統合（群指数）',short:'知覚統合',dom:'PO',axis:'perc'},
+         {id:'FD',name:'注意記憶（群指数）',short:'注意記憶',dom:'FD',axis:'wm'},
+         {id:'PS',name:'処理速度（群指数）',short:'処理速度',dom:'PS',axis:'ps'}],
+    extra:[],
+    subs:[['IN','VC',1],['SI','VC',1],['VC','VC',1],['CO','VC',1],
+          ['PCm','PO',1],['PA','PO',1],['BD','PO',1],['OA','PO',1],
+          ['AR','FD',1],['DS','FD',1],
+          ['CD','PS',1],['SS','PS',1],['MZ',null,0]]}
+};
+const SUBN={SI:['類似','ことばの概念をまとめる力'],VC:['単語','語彙・ことばで説明する力'],IN:['知識','身につけてきた知識'],
+  CO:['理解','社会的なきまりの理解'],WR:['語の推理','ことばを推理する力'],
+  BD:['積木模様','形をとらえて組み立てる力'],VP:['パズル','頭の中で形を組み合わせる力'],
+  MR:['行列推理','見て推理する力'],FW:['バランス','量の関係を推理する力'],
+  PCn:['絵の概念','見て仲間分けする力'],PCm:['絵の完成','細かいところに気づく力'],
+  PA:['絵画配列','場面の流れをとらえる力'],OA:['組合せ','部分から全体を組み立てる力'],
+  AR:['算数','聞いて覚えながら計算する力'],DS:['数唱','聞いて覚え、頭の中で操作する力'],
+  PSp:['絵のスパン','見たことを順番に覚える力'],LN:['語音整列','聞いて覚えながら整理する力'],
+  CD:['符号','見て書き写す速さと正確さ'],SS:['記号探し','見比べて判断する速さ'],
+  CA:['絵の抹消','見て探す速さ'],MZ:['迷路','先を見通して計画する力']};
+const SUBN_III={PCm:'絵画完成'};
+function subName(code,v){return (v==='III'&&SUBN_III[code])||SUBN[code][0];}
+
+/* ===== 領域ごとの見立て文 ===== */
+const DOM={
+ VC:{what:'ことばの知識や、ことばを使って考え・説明する力。',
+   good:'話を聞いて理解したり、考えをことばで説明したりするのが得意な傾向。説明や話し合いを手がかりに学びやすい。',
+   hard:['長い口頭説明や指示が理解しにくい','考えや気持ちをことばにしにくい','語彙が少なく、読解や文章題でつまずきやすい'],
+   help:['指示は短く、一つずつ。絵・写真・実物を添える','新しいことばは体験や具体例とセットで扱う','「〜だから〜」などの答え方の型を示す','理解の確認は選択肢から選ぶ形も使う'],
+   use:'新しい内容はことばで意味づけし、手順を自分のことばで言わせると定着しやすい。'},
+ VS:{what:'形や位置関係をとらえ、目で見た情報を頭の中で組み立てる力。',
+   good:'図・絵・地図・モデルから理解するのが得意な傾向。全体像を見て把握しやすい。',
+   hard:['図形・グラフ・地図の読み取りが難しい','漢字の形や、ノートの配置が整いにくい','板書を写すときに位置を見失いやすい'],
+   help:['マス目・補助線・色分けで位置を分かりやすく','見本を手元の近くに置く','形をことばで説明する（「たて線、よこ線、はらい」）','具体物を操作してから図に移る'],
+   use:'図解・フローチャート・絵カードなど、見て分かる手がかりを増やすと理解が進みやすい。'},
+ FR:{what:'初めての問題で、きまりや関係を見つけて考える力。',
+   good:'規則性を見つけたり、筋道を立てて考えたりするのが得意な傾向。応用問題にも取り組みやすい。',
+   hard:['習ったことを新しい場面に応用しにくい','きまりやパターンに気づきにくい','文章題で考え方の筋道が立てにくい'],
+   help:['解き方の手順を見える形にする（手順カード・フローチャート）','具体例をいくつか見せてから、きまりをまとめる','似た問題を並べて共通点を探させる','考え方のヒントカードを用意する'],
+   use:'「なぜそうなるか」を考える課題や、きまり発見型の学習で力を発揮しやすい。'},
+ PR:{what:'目で見た情報をもとに考え、推理する力（WISC-Vでは「視空間」と「流動性推理」に分かれた）。',
+   good:'図や絵を見て考えたり、見通しを立てたりするのが得意な傾向。',
+   hard:['図形・グラフ・地図の読み取りが難しい','きまりを見つけて応用することが難しい','見て考える課題で時間がかかる'],
+   help:['具体物の操作から始める','補助線・色分け・マス目で見やすく','手順カードで考え方を見える化','形や関係をことばでも説明する'],
+   use:'図解や見本など、目で見て分かる手がかりを活用すると理解が進みやすい。'},
+ PO:{what:'目で見た情報をまとめ、全体として理解する力（現在の「知覚推理」「視空間」に近い）。',
+   good:'絵や図を見て全体をとらえたり、組み立てたりするのが得意な傾向。',
+   hard:['図形や地図の読み取りが難しい','部分から全体を組み立てにくい','見て判断する課題で時間がかかる'],
+   help:['具体物の操作から始める','補助線・色分けで見やすく','完成見本を示す','形をことばでも説明する'],
+   use:'視覚的な手がかり（絵カード・図解）を活用すると理解が進みやすい。'},
+ WM:{what:'聞いたことを一時的に覚えておきながら、頭の中で処理する力。',
+   good:'複数の指示を覚えて行動したり、暗算をしたりするのが得意な傾向。',
+   hard:['指示を途中で忘れやすい','話を聞きながら考えると混乱しやすい','暗算・繰り上がりでまちがえやすい','板書を写すときに行を見失いやすい'],
+   help:['指示は一度に一つ。板書や手順カードで「残る形」にする','メモ・チェックリストを使う','作業を小分けにして一つずつ確認する','九九表や計算の手順表など、覚える負担を減らす道具を使う'],
+   use:'聞いたことをそのまま覚えて使う力を、音読・暗唱・口頭での確認などに生かせる。'},
+ FD:{what:'注意を向け続け、聞いた情報を覚えておく力（現在の「ワーキングメモリー」に近い）。',
+   good:'注意を保って、聞いたことを覚えておくのが得意な傾向。',
+   hard:['指示を途中で忘れやすい','注意がそれやすい','暗算でまちがえやすい'],
+   help:['指示は一度に一つ。目に見える形で残す','メモ・チェックリストを使う','作業を小分けにする','刺激の少ない環境を整える'],
+   use:'聞いて覚える力を、口頭での学習や暗唱に生かせる。'},
+ PS:{what:'目で見た情報をすばやく正確に処理し、手を動かす力。',
+   good:'単純な作業をテンポよく、正確にこなすのが得意な傾向。',
+   hard:['書くのに時間がかかる','時間内にテストやプリントが終わらない','板書を写しきれない（理解の問題ではなく速さの問題であることが多い）'],
+   help:['量を減らす・時間を延ばす','書く量を調整する（穴埋めプリント、板書の写真）','タイピングなど別の方法も認める','速さより正確さを評価する'],
+   use:'決まった手順の作業を任せると、自信につながりやすい。'}
+};
+/* ===== 学校・家庭で生かす視点（場面別） ===== */
+const SCH=['授業','板書・ノート','テスト・課題','友だち・生活','強みを生かす'];
+const HOM=['声かけ','宿題・家庭学習','くらし','遊び','強みを生かす'];
+const IDEAS={
+ VC:{s:{'授業':['指示は短い文で、一度に一つずつ出す','「まず」「つぎに」「さいごに」など順序のことばをそろえる','新しいことばは写真・実物・動作で意味を確かめてから使う','発問に「AとBのどっち？」など選んで答える形も用意する'],
+     '板書・ノート':['キーワードを色や枠で目立たせる','ことばだけでなく図やイラストを添える','ノートの書き出しの型（「ぼくは〜と思う。わけは〜」）を示す'],
+     'テスト・課題':['問題文を読み上げる、または短い文に区切る','文章題は絵や図にしてから考える','答え方の例を一つ示す'],
+     '友だち・生活':['気持ちのことばカードを使って、気持ちを表す練習をする','トラブルは絵や吹き出しで振り返る','話し合いでは話型カードを用意する'],
+     '強みを生かす':['学んだことを友だちに説明する役を任せる','音読・発表・インタビューなど、ことばの活動で活躍の場をつくる','手順を自分のことばで言いながら作業する']},
+   h:{'声かけ':['「あとで」より「時計の長い針が6になったら」と具体的に伝える','子どもの話を「〜だったんだね」と言い直して返す','分からないことばは、一緒に辞書や写真で調べる'],
+     '宿題・家庭学習':['音読は一文ずつ交代で読む','文章題は声に出して読み、絵に描いてみる','日記は「いつ・どこで・だれと・何を・どう思った」と質問して引き出す'],
+     'くらし':['夕食のときに「今日いちばん○○だったこと」を話す','買い物や料理で、ものの名前や数え方を使う','絵本やテレビの感想を聞いてみる'],
+     '遊び':['しりとり・なぞなぞ・連想ゲーム','読み聞かせや、図書館に一緒に行く','ヒントを出し合う「これなーんだ？」クイズ'],
+     '強みを生かす':['家族への伝言や、お店での注文を任せる','お話づくりや本の紹介を家族の前でしてもらう','気持ちや考えをことばで説明できたらほめる']}},
+ VS:{s:{'授業':['具体物を操作してから、図や式に移る','図形は向きを変えたり、指でなぞったりして確かめる','見本や完成形を手元に置く'],
+     '板書・ノート':['マス目や補助線のあるノート・プリントを使う','板書の色や位置のルールを毎時間そろえる','写す量を減らし、板書の写真やプリントを配る'],
+     'テスト・課題':['図やグラフは拡大し、余白を広くとる','地図やグラフは、見るところを指で示す・枠で囲む','図形問題は形の特徴をことばで言ってから解く'],
+     '友だち・生活':['教室の物の置き場所を写真で表示する','移動先を地図や写真で示す','体育の位置はマーカーやラインで示す'],
+     '強みを生かす':['図解やマインドマップでまとめさせる','掲示物づくりや図工・作品で活躍の場をつくる','学習内容を絵カードやフローチャートで示す']},
+   h:{'声かけ':['「あれ取って」ではなく「テレビの右の棚の上」と位置をことばで伝える','字の形は「たて線、よこ線、はらい」と言いながら一緒に書く','探し物の置き場所を一緒に決めておく'],
+     '宿題・家庭学習':['マス目の大きいノートや補助線入りのプリントを使う','漢字は指でなぞる・空書きする・部分に分けて覚える','図形の問題は箱や紙など実物で確かめる'],
+     'くらし':['引き出しや棚にラベル・写真を貼って片付けやすくする','服のたたみ方などを写真の手順にする','出かける前に、地図で道順を一緒に見る'],
+     '遊び':['ブロック・パズル・折り紙・あやとり','間違い探し・迷路','積み木やタングラム'],
+     '強みを生かす':['料理の盛り付けや部屋の模様替えを任せる','工作や絵を家族で楽しみ、飾る','おでかけの計画を地図で立ててもらう']}},
+ FR:{s:{'授業':['表を見てきまりを見つけるなど、きまり発見型の課題を取り入れる','例を2〜3つ見せてから、共通するきまりをまとめる','解き方を手順カード（フローチャート）にする'],
+     '板書・ノート':['考え方の流れを矢印で板書に残す','似ている問題を並べて書き、違いに印をつける','「分かっていること」と「聞かれていること」を分けて書く型を示す'],
+     'テスト・課題':['応用問題は、その前の基本問題とセットで出す','段階的なヒントカードを用意する','式を考える前に図や絵にかく'],
+     '友だち・生活':['「こんなときはこうする」をルールカードにする','予定の変更は、理由と見通しを一緒に伝える','トラブルは「原因→結果」の図で整理する'],
+     '強みを生かす':['「なぜそうなるか」を説明する場面で活躍の場をつくる','プログラミングや推理クイズに挑戦させる','友だちの考えの共通点や違いを見つける役を任せる']},
+   h:{'声かけ':['「どうしてだと思う？」と理由を一緒に考える','うまくいかないとき「ほかの方法はある？」と一緒に選択肢を出す','新しいことは、一度やって見せてから任せる'],
+     '宿題・家庭学習':['分からないときは、例題を一緒に見直す','間違えた答えと正しい答えを並べて比べる','算数の文章題は「分かっていること」に線を引く'],
+     'くらし':['洗濯物や食器の仕分けを任せる','おこづかいの使い道を一緒に考える','天気と服装の関係などを話題にする'],
+     '遊び':['トランプ・オセロ・将棋など、ルールのあるゲーム','推理クイズ・数当てゲーム','仲間分けゲーム'],
+     '強みを生かす':['おでかけの段取りを一緒に考えてもらう','ゲームの作戦を説明してもらう','家の困りごとの解決方法を一緒に考えてもらう']}},
+ WM:{s:{'授業':['指示は一度に一つ。言ったことは板書や手順カードで残す','大事なことは最初と最後に2回言う','作業の途中で「今どこまで？」と確かめる'],
+     '板書・ノート':['板書は区切って少しずつ。写す場所を伝える','写す内容のプリントを手元に置く','ノートの日付・めあて・まとめの位置を決めておく'],
+     'テスト・課題':['筆算や途中の式を書いてよいことにする','九九表や公式カードなどの補助具を認める','問題文の大事な数字に線を引かせる'],
+     '友だち・生活':['持ち物や提出物はチェックリストで確かめる','連絡帳を書く時間をとり、先生が確認する','係活動の手順をカードにして掲示する'],
+     '強みを生かす':['音読・暗唱・リコーダーなど、聞いて覚える活動で活躍の場をつくる','口頭での確認クイズを取り入れる','伝言係を任せる']},
+   h:{'声かけ':['お願いは一つずつ。終わったら次を伝える','「何をするんだっけ？」と本人に言ってもらう','伝わらなかったときは、叱らずに短く言い直す'],
+     '宿題・家庭学習':['宿題の内容を、連絡帳と照らして一緒に確かめる','暗算より筆算。メモしながら解いてよいことにする','覚える学習は少しずつ、くり返す'],
+     'くらし':['朝の支度や寝る前の準備をイラストのチェック表にする','持ち物は前の日に一緒に用意し、玄関に置く','家族の予定をカレンダーに書いて、見える場所に貼る'],
+     '遊び':['神経衰弱・カルタ','言われたものを覚えて集める「おつかいゲーム」','リズム遊び・手遊び歌'],
+     '強みを生かす':['歌や詩を覚えて家族に披露してもらう','家族の予定を覚えておく係を任せる','聞いた話を家族に伝える役を任せる']}},
+ PS:{s:{'授業':['書く量を減らす（穴埋め・選択式・記号で答える）','作業時間を長めにとる、または量を減らす','板書は写真を撮ってよい、またはプリントを配る'],
+     '板書・ノート':['写す部分に印をつけ、必要なところだけ写す','マス目の大きいノートや書きやすい鉛筆を使う','タブレット入力や音声入力も選べるようにする'],
+     'テスト・課題':['時間を延ばす、または問題数を調整する','答えを書く欄を大きくする','速さより、正確さや考え方を評価する'],
+     '友だち・生活':['着替えや準備は早めに声をかけて始める','給食や掃除の手順を絞る','タイマーで活動の終わりの見通しを示す'],
+     '強みを生かす':['配り係・整理係など、決まった手順の仕事を任せる','計算練習やタイピングなど、テンポのよい活動で力を発揮させる','作業の正確さをほめて、役割につなげる']},
+   h:{'声かけ':['「早く！」より「あと5分で出るよ」と時間を見える形で伝える','終わったところまでを認める','急がせるより、始める時間を早める'],
+     '宿題・家庭学習':['宿題に時間がかかりすぎるときは、先生に相談して量を調整する','書く宿題は区切って、休憩を入れる','タイマーで時間を区切る'],
+     'くらし':['朝の支度は時間に余裕をもってスタートする','タイマーや時計で見通しをもたせる','お手伝いは量を決めて取り組む'],
+     '遊び':['ぬり絵・点つなぎ','タイムを計って自己ベストを目指すゲーム','ビーズや工作など手先を使う遊び'],
+     '強みを生かす':['洗濯物たたみや配膳などのお手伝いを任せる','料理の下ごしらえを任せる','作業の速さや正確さをほめる']}}
+};
+function ideasOf(dom){
+  if(dom==='PO')return IDEAS.VS; if(dom==='FD')return IDEAS.WM;
+  if(dom==='PR'){const m={s:{},h:{}};['s','h'].forEach(sd=>Object.keys(IDEAS.VS[sd]).forEach(sc=>m[sd][sc]=[...IDEAS.VS[sd][sc].slice(0,2),...IDEAS.FR[sd][sc].slice(0,2)]));return m;}
+  return IDEAS[dom];
+}
+const pkKey=(dom,sd,sc,k)=>`${dom}|${sd}|${sc}|${k}`;
+function needHelp(i){return i.st==='w'||i.v<85;}
+function isStrong(i){return i.st==='s'||i.v>=115;}
+function defPick(i,sc,k){if(k!==0)return false;if(sc==='強みを生かす')return isStrong(i);return needHelp(i);}
+function isPicked(r,i,sd,sc,k){const key=pkKey(i.dom,sd,sc,k);return r.pick&&key in r.pick?!!r.pick[key]:defPick(i,sc,k);}
+function orderIdx(A){const w=A.idx.filter(i=>i.st==='w'),lo=A.idx.filter(i=>i.st!=='w'&&i.v<85),s=A.idx.filter(i=>isStrong(i)&&!w.includes(i)&&!lo.includes(i));return [...w,...lo,...s,...A.idx.filter(i=>![...w,...lo,...s].includes(i))];}
+function pickedList(r,A,sd){const out=[];orderIdx(A).forEach(i=>{const I=ideasOf(i.dom)[sd];(sd==='s'?SCH:HOM).forEach(sc=>I[sc].forEach((t,k)=>{if(isPicked(r,i,sd,sc,k))out.push({i,sc,text:t});}));});return out;}
+
+/* ===== 検査のイメージ（下位検査ごと） ===== */
+const SUBX={
+ SI:['ことばどうしの関係について考え、ことばで答えます。','ことばの意味をまとめる力、抽象的に考える力','仲間分け、まとめのことばを考える場面'],
+ VC:['ことばの意味について、ことばで答えます。','語彙の豊かさ、ことばで説明する力','教科書の語句、説明を聞いて理解する場面'],
+ IN:['身の回りや学校で学ぶ知識について答えます。','これまでに身につけてきた知識の量','社会・理科などの知識、興味の広がり'],
+ CO:['日常の場面やきまりについて、考えをことばで答えます。','社会的なきまりや常識の理解、ことばでの判断','学級のルール、友だちとのかかわり方'],
+ WR:['ヒントをもとに、ことばを考えて答えます。','ヒントをまとめてことばを推理する力','なぞなぞ、読解での推測'],
+ BD:['積木を使って、形を組み立てる課題に取り組みます。','形をとらえて分け、組み立てる力、目と手の協応','図形、漢字の形、図工'],
+ VP:['形を頭の中で組み合わせて考える課題に取り組みます。','頭の中で形を回したり組み合わせたりする力','図形の合成・分解、地図を見る場面'],
+ MR:['図を見て、きまりを考える課題に取り組みます。','見て推理する力、規則性に気づく力','算数のきまり発見、表やグラフの読み取り'],
+ FW:['絵を見て、量の関係を考える課題に取り組みます。','量の関係を推理する力','算数の文章題、比べる・つり合う考え方'],
+ PCn:['絵を見て、仲間を考える課題に取り組みます。','見て仲間分けする力、概念で考える力','理科・社会の分類、仲間分け'],
+ PCm:['絵を見て、細かいところに気づく課題に取り組みます。','細かいところに気づく力、見る注意','間違い探し、見直し'],
+ PA:['絵を使って、お話の流れを考える課題に取り組みます。','場面の流れや原因と結果をとらえる力','お話の順序、一日の見通し'],
+ OA:['ピースを組み合わせて形を作る課題に取り組みます。','部分から全体を組み立てる力','パズル、図形'],
+ AR:['口で出される算数の問題に、暗算で答えます。','聞いて覚えながら計算する力','暗算、文章題、聞いて考える授業'],
+ DS:['聞いた数字を覚えて答える課題に取り組みます。','聞いたことを覚え、頭の中で操作する力','口頭の指示や連絡を覚える場面'],
+ PSp:['見た絵を覚えて答える課題に取り組みます。','見たことを順番どおりに覚える力','板書を写す、見本を見て作業する場面'],
+ LN:['聞いた数字やかなを覚え、頭の中で整理して答えます。','聞いたことを覚えながら並べ替える力','いくつかの指示を順番に実行する場面'],
+ CD:['決められた記号を、時間内に書く課題に取り組みます。','見て書き写す速さと正確さ、目と手の協応','板書を写す、計算ドリルの速さ'],
+ SS:['記号を見比べて、時間内にすばやく判断します。','見て比べ、すばやく判断する力','見直し、プリントを解く速さ'],
+ CA:['たくさんの絵の中から、決められた絵を時間内に探します。','見て探す速さ、注意を続ける力','教科書から必要な情報を探す場面'],
+ MZ:['鉛筆で迷路をたどる課題に取り組みます。','先を見通して計画する力','作業の段取りを考える場面']
+};
+const ACT={VC:'ことばの意味を説明したり、共通点を考えたりする',VS:'積木で模様を作ったり、形を頭の中で組み合わせたりする',FR:'図のきまりを見つけたり、つり合いを考えたりする',
+  PR:'積木で模様を作ったり、図のきまりを見つけたりする',PO:'絵の足りない部分を見つけたり、絵や形を組み立てたりする',WM:'聞いた数字を覚えて言ったり、並べ替えたりする',
+  FD:'聞いた数字を覚えて言ったり、暗算をしたりする',PS:'見本どおりに記号をすばやく書いたり、探したりする'};
+
+/* 保護者向けのことば */
+const PL={VC:'ことばで考える力',VS:'見て形をとらえる力',FR:'きまりを見つけて考える力',PR:'見て考える力',PO:'見てまとめる力',WM:'聞いて覚えておく力',FD:'注意して覚えておく力',PS:'作業のスピード'};
+const AXES=[{k:'lang',n:'言語'},{k:'perc',n:'視覚・推理'},{k:'wm',n:'記憶（WM）'},{k:'ps',n:'処理速度'}];
+
+/* ===== 状態と保存 ===== */
+const STORE='wisc-mitate-v1';
+function sample(){return {id:'sample',sample:true,label:'例：A-1（サンプル）',date:'小4・10月',ver:'V',
+  sc:{FSIQ:92,VCI:102,VSI:108,FRI:95,WMI:84,PSI:78,GAI:101,CPI:79},
+  sb:{SI:11,VC:10,BD:12,VP:11,MR:9,FW:9,DS:7,PSp:7,CD:6,SS:6}};}
+function load(){try{const s=JSON.parse(localStorage.getItem(STORE));if(s&&Array.isArray(s.records)&&s.records.length)return s;}catch(e){}
+  return {records:[sample()],active:'sample'};}
+let state=load();
+function save(){try{localStorage.setItem(STORE,JSON.stringify(state));}catch(e){}}
+const cur=()=>state.records.find(r=>r.id===state.active)||state.records[0];
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ===== 統計ヘルパー ===== */
+function cat(v){if(v>=130)return'非常に高い';if(v>=120)return'高い';if(v>=110)return'平均の上';if(v>=90)return'平均';if(v>=80)return'平均の下';if(v>=70)return'低い';return'非常に低い';}
+function subCat(v){if(v>=13)return'高め';if(v<=7)return'低め';return'平均域';}
+function erf(x){const t=1/(1+.3275911*Math.abs(x));const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-.284496736)*t+.254829592)*t*Math.exp(-x*x);return x>=0?y:-y;}
+function pct(v){const p=50*(1+erf((v-100)/15/Math.SQRT2));return p<1?'1未満':p>99?'99超':Math.round(p);}
+const okC=v=>Number.isFinite(v)&&v>=40&&v<=160;
+const okS=v=>Number.isFinite(v)&&v>=1&&v<=19;
+const TH_IDX=10, TH_SUB=3, TH_PAIR=15, TH_SPREAD=23;
+
+function analyze(r){
+  const V=VERS[r.ver]; const sc=r.sc||{}, sb=r.sb||{};
+  const idx=V.idx.map(i=>({...i,v:okC(+sc[i.id])?+sc[i.id]:null})).filter(i=>i.v!==null);
+  const mean=idx.length?idx.reduce((a,b)=>a+b.v,0)/idx.length:null;
+  idx.forEach(i=>{i.diff=i.v-mean;i.st=idx.length>=3?(i.diff>=TH_IDX?'s':i.diff<=-TH_IDX?'w':'n'):'n';});
+  const spread=idx.length>=2?Math.max(...idx.map(i=>i.v))-Math.min(...idx.map(i=>i.v)):null;
+  const pairs=[];for(let a=0;a<idx.length;a++)for(let b=a+1;b<idx.length;b++){const d=idx[a].v-idx[b].v;if(Math.abs(d)>=TH_PAIR)pairs.push({a:idx[a],b:idx[b],d});}
+  pairs.sort((x,y)=>Math.abs(y.d)-Math.abs(x.d));
+  const extras=[];const g=+sc.GAI,c=+sc.CPI;
+  if(okC(g)&&okC(c)&&Math.abs(g-c)>=TH_PAIR)extras.push({t:`GAI（${g}）とCPI（${c}）の差が${Math.abs(g-c)}点`,m:g>c?'考える力に比べ、記憶・処理の速さの力が低めです。学習の取りこぼしは、理解力より「覚えておく・速く処理する」負担から起きている可能性があります。':'記憶・処理の力に比べ、ことばや推理で考える力が低めです。'});
+  const vi=+sc.VIQ,pi=+sc.PIQ;
+  if(r.ver==='III'&&okC(vi)&&okC(pi)&&Math.abs(vi-pi)>=TH_PAIR)extras.push({t:`言語性IQ（${vi}）と動作性IQ（${pi}）の差が${Math.abs(vi-pi)}点`,m:vi>pi?'ことばで考える力に比べ、見て考え・手を動かす力が低めです。':'見て考え・手を動かす力に比べ、ことばで考える力が低めです。'});
+  const subs=V.subs.map(([code,ix,pr])=>({code,ix,pr,name:subName(code,r.ver),v:okS(+sb[code])?+sb[code]:null})).filter(s=>s.v!==null);
+  const base=subs.filter(s=>s.pr).length>=3?subs.filter(s=>s.pr):subs;
+  const smean=base.length?base.reduce((a,b)=>a+b.v,0)/base.length:null;
+  subs.forEach(s=>{s.diff=s.v-smean;s.st=subs.length>=4?(s.diff>=TH_SUB?'s':s.diff<=-TH_SUB?'w':'n'):'n';});
+  const fullV=okC(+sc[V.full.id])?+sc[V.full.id]:null;
+  return {V,idx,mean,spread,pairs,extras,subs,smean,fullV};
+}
+
+/* ===== 入力欄 ===== */
+function numField(key,group,min,max,val){return `<input type="number" inputmode="numeric" id="f-${group}-${key}" data-g="${group}" data-k="${key}" min="${min}" max="${max}" value="${val??''}" aria-label="${key}">`;}
+function renderInputs(){
+  const r=cur(),V=VERS[r.ver];
+  $('#records').innerHTML=state.records.map(x=>`<button class="chip" data-id="${esc(x.id)}" aria-pressed="${x.id===r.id}">${esc(x.label||'無題')}<span class="muted small"> ${VERS[x.ver].label}</span></button>`).join('')+`<button class="chip add" id="btnNew">＋ 新しい記録</button>`;
+  $('#recLabel').value=r.label||''; $('#recDate').value=r.date||''; $('#author').value=r.author??state.author??'';
+  document.querySelectorAll('#verSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===r.ver));
+  const sc=r.sc||{};
+  let h=`<div class="nm"><b>${V.full.name}</b><small>${V.full.short}</small></div>${numField(V.full.id,'sc',40,160,sc[V.full.id])}`;
+  V.iq.forEach(i=>h+=`<div class="nm">${i.name}<small>${i.id}</small></div>${numField(i.id,'sc',40,160,sc[i.id])}`);
+  h+='<div class="sep"></div>';
+  V.idx.forEach(i=>h+=`<div class="nm">${i.name}<small>${i.id}</small></div>${numField(i.id,'sc',40,160,sc[i.id])}`);
+  if(V.extra.length){h+='<div class="sep"></div>';V.extra.forEach(i=>h+=`<div class="nm">${i.name}<small>任意</small></div>${numField(i.id,'sc',40,160,sc[i.id])}`);}
+  $('#compInputs').innerHTML=h;
+  const sb=r.sb||{};let s='';
+  const groups=[...V.idx.map(i=>({id:i.id,n:i.name})),{id:null,n:'指標に含まれない検査'}];
+  groups.forEach(g=>{const list=V.subs.filter(x=>x[1]===g.id);if(!list.length)return;
+    s+=`<div class="grp"><h4>${g.n}</h4><div class="scoregrid">`+list.map(([c,,pr])=>`<div class="nm">${subName(c,r.ver)}${pr?'':'<span class="tagsec">補助</span>'}<small>${SUBN[c][1]}</small></div>${numField(c,'sb',1,19,sb[c])}`).join('')+`</div></div>`;});
+  $('#subInputs').innerHTML=s;
+  validateAll();
+}
+function validateAll(){document.querySelectorAll('input[type=number]').forEach(el=>{const v=el.value===''?NaN:+el.value;const ok=el.value===''||(el.dataset.g==='sc'?okC(v):okS(v));el.classList.toggle('bad',!ok);el.title=ok?'':(el.dataset.g==='sc'?'40〜160の数値を入れてください':'1〜19の数値を入れてください');});}
+
+/* ===== グラフ ===== */
+function profileSVG(full,items,mean){
+  const W=680,H=300,L=46,R=18,T=26,B=46,mn=40,mx=160;
+  const y=v=>T+(mx-Math.max(mn,Math.min(mx,v)))/(mx-mn)*(H-T-B);
+  const pts=(full?[{short:full.short,v:full.v,full:1}]:[]).concat(items);
+  const n=pts.length, gap=(W-L-R)/n, x=k=>L+gap*(k+.5);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="指標得点プロフィール"><rect class="band" x="${L}" y="${y(115)}" width="${W-L-R}" height="${y(85)-y(115)}"/>`;
+  [40,55,70,85,100,115,130,145,160].forEach(t=>s+=`<line class="ax" x1="${L}" x2="${W-R}" y1="${y(t)}" y2="${y(t)}"/><text class="tk" x="${L-8}" y="${y(t)+4}" text-anchor="end">${t}</text>`);
+  s+=`<line class="ctr" x1="${L}" x2="${W-R}" y1="${y(100)}" y2="${y(100)}"/>`;
+  if(mean!=null&&items.length)s+=`<line class="mean" x1="${x(full?1:0)-gap*.4}" x2="${W-R}" y1="${y(mean)}" y2="${y(mean)}"/>`;
+  if(full)s+=`<line class="ax" x1="${L+gap}" x2="${L+gap}" y1="${T}" y2="${H-B}"/>`;
+  const off=full?1:0;
+  if(items.length>1)s+=`<polyline class="ln" points="${items.map((p,k)=>`${x(k+off)},${y(p.v)}`).join(' ')}"/>`;
+  pts.forEach((p,k)=>{const cx=x(k),cy=y(p.v);
+    s+=p.full?`<rect class="full" x="${cx-6}" y="${cy-6}" width="12" height="12" transform="rotate(45 ${cx} ${cy})"/>`:`<circle class="pt ${p.st==='s'?'s':p.st==='w'?'w':''}" cx="${cx}" cy="${cy}" r="6"/>`;
+    s+=`<text class="val" x="${cx}" y="${cy-12}" text-anchor="middle">${p.v}${p.st==='s'?' ▲':p.st==='w'?' ▼':''}</text><text class="lb" x="${cx}" y="${H-B+22}" text-anchor="middle">${esc(p.short)}</text>`;});
+  return s+'</svg>';
+}
+function subSVG(subs,smean,ver){
+  const n=subs.length,gap=46,L=40,R=12,T=24,B=86,W=Math.max(520,L+R+gap*n),H=300,mn=1,mx=19;
+  const y=v=>T+(mx-v)/(mx-mn)*(H-T-B), x=k=>L+gap*(k+.5);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="評価点プロフィール" style="min-width:${Math.min(W,900)}px"><rect class="band" x="${L}" y="${y(13)}" width="${W-L-R}" height="${y(7)-y(13)}"/>`;
+  [1,4,7,10,13,16,19].forEach(t=>s+=`<line class="ax" x1="${L}" x2="${W-R}" y1="${y(t)}" y2="${y(t)}"/><text class="tk" x="${L-8}" y="${y(t)+4}" text-anchor="end">${t}</text>`);
+  s+=`<line class="ctr" x1="${L}" x2="${W-R}" y1="${y(10)}" y2="${y(10)}"/>`;
+  if(smean!=null)s+=`<line class="mean" x1="${L}" x2="${W-R}" y1="${y(smean)}" y2="${y(smean)}"/>`;
+  let prev=null;subs.forEach((p,k)=>{if(prev!==null&&prev!==p.ix)s+=`<line class="ax" x1="${x(k)-gap/2}" x2="${x(k)-gap/2}" y1="${T}" y2="${H-B+80}"/>`;prev=p.ix;});
+  subs.forEach((p,k)=>{const cx=x(k),cy=y(p.v);
+    s+=`<circle class="pt ${p.st==='s'?'s':p.st==='w'?'w':''}" cx="${cx}" cy="${cy}" r="5.5"/><text class="val" x="${cx}" y="${cy-11}" text-anchor="middle">${p.v}</text>`;
+    s+=`<text class="lb" x="${cx}" y="${H-B+18}" text-anchor="middle">`+[...p.name].map((ch,i)=>`<tspan x="${cx}" dy="${i?15:0}">${ch==='ー'?'｜':esc(ch)}</tspan>`).join('')+`</text>`;});
+  return s+'</svg>';
+}
+
+/* ===== 見立て ===== */
+function memoText(r,A){
+  const V=A.V, L=[];
+  L.push(`【見立てメモ（下書き）】${r.label||''}　${V.label}${r.date?'（'+r.date+'）':''}`);
+  if(A.fullV!=null)L.push(`■全体：${V.full.name}は${A.fullV}で、「${cat(A.fullV)}」の範囲（パーセンタイル目安 ${pct(A.fullV)}）。`);
+  if(A.spread!=null)L.push(`■指標間のばらつき：最大${A.spread}点。`+(A.spread>=TH_SPREAD?'指標間の差が大きいため、全体のIQだけで判断せず、指標ごとのプロフィールで理解することが大切です。':'指標間の差は比較的小さく、全体の水準もあわせて参考にできます。'));
+  const S=A.idx.filter(i=>i.st==='s'),W=A.idx.filter(i=>i.st==='w');
+  const low=A.idx.filter(i=>i.v<85&&i.st!=='w');
+  if(S.length)L.push(`■相対的な強み：${S.map(i=>`${i.short}（${i.v}）`).join('、')}。`+S.map(i=>DOM[i.dom].good).join(''));
+  if(W.length)L.push(`■相対的な弱み：${W.map(i=>`${i.short}（${i.v}）`).join('、')}。`+W.map(i=>`${i.short}が苦手なときは、${DOM[i.dom].hard.slice(0,2).join('、')}などの困りが出やすい`).join('。')+'ことがあります。');
+  if(!S.length&&!W.length&&A.idx.length>=3)L.push('■個人内では、目立った強み・弱みの差は見られません。');
+  if(low.length)L.push(`■標準と比べて低めの指標：${low.map(i=>`${i.short}（${i.v}）`).join('、')}。個人内の差は小さくても、支援を検討する視点になります。`);
+  A.extras.forEach(e=>L.push(`■${e.t}：${e.m}`));
+  const ss=A.subs.filter(s=>s.st==='s'),sw=A.subs.filter(s=>s.st==='w');
+  if(ss.length||sw.length)L.push(`■下位検査：`+(ss.length?`高めに出たのは${ss.map(s=>`${s.name}（${s.v}）`).join('、')}。`:'')+(sw.length?`低めに出たのは${sw.map(s=>`${s.name}（${s.v}）`).join('、')}。`:''));
+  L.push('※数値から機械的に作成した参考メモです。行動観察・生育歴・学習の様子と合わせ、検査者の所見を優先してください。');
+  return L.join('\n');
+}
+function renderResults(){
+  const r=cur(),A=analyze(r),V=A.V;
+  if(A.idx.length<2){$('#results').innerHTML=`<div class="panel empty">指標得点を2つ以上入れると、ここにプロフィールと見立てが表示されます。</div>`;return;}
+  let h='';
+  if(r.sample)h+=`<div class="note"><b>サンプル表示中：</b>架空の例です。「＋ 新しい記録」から実際の数値を入れてください。</div>`;
+  h+=`<div class="summary">
+    <div><div class="k">${V.full.name}</div><div class="v">${A.fullV??'—'}</div><div class="d">${A.fullV!=null?`${cat(A.fullV)}・目安 ${pct(A.fullV)}%ile`:'未入力'}</div></div>
+    <div><div class="k">指標の平均（個人内）</div><div class="v">${A.mean.toFixed(1)}</div><div class="d">強み・弱みの基準</div></div>
+    <div><div class="k">指標間の最大差</div><div class="v">${A.spread}</div><div class="d">${A.spread>=TH_SPREAD?'<span class="badge c">差が大きい</span>':'<span class="badge n">差は小さめ</span>'}</div></div></div>`;
+  if(A.spread>=TH_SPREAD)h+=`<div class="note"><b>全体IQの読み方に注意：</b>指標間に${A.spread}点の差があります。全体のIQ1つで「この子の力」とまとめず、指標ごとの凸凹で理解しましょう。</div>`;
+  h+=`<div class="panel"><h2>指標得点プロフィール</h2><div class="chartbox">${profileSVG(A.fullV!=null?{short:V.full.short,v:A.fullV}:null,A.idx,A.mean)}</div>
+    <div class="legend"><span><i style="background:var(--strong)"></i>▲ 相対的な強み（平均より+${TH_IDX}以上）</span><span><i style="background:var(--weak)"></i>▼ 相対的な弱み（−${TH_IDX}以下）</span><span>網かけ：85〜115（平均±1SD）</span><span>青の点線：本人の指標平均</span></div></div>`;
+  h+='<div class="cards">'+A.idx.map(i=>{const D=DOM[i.dom];const lowN=i.v<85;
+    let body=`<div class="lead">${D.what}</div>`;
+    if(i.st==='s'||i.v>=115)body+=`<div class="subh">得意なときの姿</div><div class="small">${D.good}</div><div class="subh">生かし方</div><div class="small">${D.use}</div>`;
+    if(i.st==='w'||lowN)body+=`<div class="subh">困りやすい場面</div><ul>${D.hard.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+    const sx=V.subs.filter(s=>s[1]===i.id);
+    if(sx.length)body+=`<div class="subh">検査ではこんなことをしました</div><ul>${sx.map(s=>`<li><b>${subName(s[0],r.ver)}</b>：${SUBX[s[0]][0]}</li>`).join('')}</ul>`;
+    const badge=i.st==='s'?'<span class="badge s">▲ 強み</span>':i.st==='w'?'<span class="badge w">▼ 弱み</span>':'<span class="badge n">個人内で標準的</span>';
+    return `<div class="card ${i.st}"><div class="hd"><h3>${i.name}</h3><span class="sc">${i.v}</span></div>
+      <div class="row" style="gap:6px">${badge}<span class="badge n">${cat(i.v)}</span><span class="badge n">平均との差 ${i.diff>=0?'+':''}${i.diff.toFixed(1)}</span></div>${body}</div>`;}).join('')+'</div>';
+  h+=ideasPanel(r,A);
+  if(A.pairs.length||A.extras.length){h+=`<div class="panel"><h2>大きな差のある組み合わせ</h2><div class="pairs">`+
+    A.pairs.map(p=>`<div><span>${p.d>0?p.a.short:p.b.short} ＞ ${p.d>0?p.b.short:p.a.short}</span><span>${Math.abs(p.d)}点差</span></div>`).join('')+
+    A.extras.map(e=>`<div><span>${e.t}<br><span class="small muted">${e.m}</span></span><span></span></div>`).join('')+
+    `</div><p class="small muted" style="margin:8px 0 0">目安として${TH_PAIR}点以上の差を表示しています。統計的に有意かどうかは、実施マニュアルの臨界値で確認してください。</p></div>`;}
+  if(A.subs.length){h+=`<div class="panel"><h2>評価点プロフィール</h2><div class="chartbox">${subSVG(A.subs,A.smean,r.ver)}</div>
+    <div class="legend"><span>網かけ：7〜13（平均±1SD）</span><span>青の点線：本人の評価点平均 ${A.smean.toFixed(1)}</span><span>▲▼の色：本人平均から±${TH_SUB}以上</span></div>
+    <div class="tablewrap" style="margin-top:10px"><table><thead><tr><th>下位検査</th><th>評価点</th><th>水準</th><th>本人平均との差</th><th>主にみている力</th></tr></thead><tbody>`+
+    A.subs.map(s=>`<tr><td>${s.name}${s.pr?'':' <span class="tagsec">補助</span>'}</td><td class="num">${s.v}</td><td>${subCat(s.v)}</td><td class="num">${s.st==='s'?'▲ ':s.st==='w'?'▼ ':''}${s.diff>=0?'+':''}${s.diff.toFixed(1)}</td><td class="small">${SUBN[s.code][1]}</td></tr>`).join('')+`</tbody></table></div></div>`;}
+  h+=`<div class="panel"><h2>見立てメモ（下書き）</h2><p class="small muted" style="margin:0 0 8px">個別の指導計画や引き継ぎの下書きに。自由に書き直せます。</p>
+    <textarea id="memo">${esc(r.memoEdit??memoText(r,A))}</textarea><div class="btnrow"><button class="btn primary" id="btnCopy">メモと選んだ手立てをコピー</button><span class="small muted" id="copyMsg" role="status"></span></div>
+    <p class="small muted" style="margin:6px 0 0">メモを書き直すと、教師向けPDFの「③ 見立てメモ」に入ります。書き直していないときは、PDFの③は手書きのメモ欄になります（要点は「読み取りのポイント」にまとめて入ります）。</p></div>`;
+  h+=`<div class="panel"><h2>A4で出力（PDF）</h2>
+    <p class="small muted" style="margin:0 0 10px">校内での引き継ぎ・ケース会議用の資料を、A4縦1枚のPDFで作ります。</p>
+    <div class="note" style="margin-bottom:10px"><b>取り扱い：</b>このアプリの見立ては、数値から機械的に作った校内用の参考資料です。保護者への結果の説明は、検査者の報告書と所見にもとづいて行ってください。</div>
+    <p class="small muted" style="margin:0">作成者名は、上の「1 記録をえらぶ」で入れます。</p>
+    <div class="pv" id="pvWrap"><div class="pv-in" id="pvIn"></div></div>
+    <p class="small muted" id="pvMsg" style="margin:6px 0 0"></p>
+    <div class="btnrow"><button class="btn primary" data-pdf="teacher">教師向けPDFを保存</button><span class="small muted" id="pdfMsg" role="status"></span></div></div>`;
+  $('#results').innerHTML=h;
+  renderPreview();
+}
+
+/* ===== 学校・おうちで生かす視点パネル ===== */
+function ideasPanel(r,A){
+  let n=0;const ns=pickedList(r,A,'s').length,nh=pickedList(r,A,'h').length;
+  let h=`<div class="panel"><h2>学校・おうちでの手立て（候補）</h2>
+  <div class="howto">
+    <p><b>ここにあるのは、どれも「その力に合わせた手立ての候補」です。</b>チェックがない項目も、合わないという意味ではありません。お子さんの様子に合わせて、どれでも参考にできます。</p>
+    <p><span class="ck-demo">✓</span> チェックは<b>「教師向けPDFとコピーするメモにのせる」</b>という印です。はじめは、のせる候補として各場面から1つずつ選んであります（弱み・低めの力は各場面の1つ目、強みは「強みを生かす」の1つ目）。お子さんに合うものに選び直してください。</p>
+  </div>
+  <div class="pick-sum"><span>いま PDFにのせる項目：<b>学校 <span id="nS">${ns}</span>件</b>／<b>おうち <span id="nH">${nh}</span>件</b></span><span class="small muted">教師向けPDFには、④学校・⑤家庭へ伝えることに、それぞれ8件までのります（上から順に）。</span></div>
+  <div class="btnrow" style="margin:8px 0 10px"><button class="btn" id="btnPickReset">はじめの選び方に戻す</button><button class="btn" id="btnPickNone">のせる項目をすべて外す</button></div><div class="doms">`;
+  orderIdx(A).forEach(i=>{
+    const I=ideasOf(i.dom);const open=needHelp(i)||isStrong(i);
+    const cnt=['s','h'].reduce((a,sd)=>a+(sd==='s'?SCH:HOM).reduce((b,sc)=>b+I[sd][sc].filter((t,k)=>isPicked(r,i,sd,sc,k)).length,0),0);
+    const badge=i.st==='s'?'<span class="badge s">▲ 強み</span>':i.st==='w'?'<span class="badge w">▼ 弱み</span>':i.v<85?'<span class="badge c">低め</span>':'<span class="badge n">標準的</span>';
+    h+=`<details class="dom" data-dom="${i.dom}" ${open?'open':''}><summary><span><b>${i.name}</b>　<span class="num">${i.v}</span> ${badge}</span><span class="small muted" data-cnt="${i.dom}">PDFにのせる：${cnt}件</span></summary>${open?'':'<p class="small muted" style="margin:6px 0 0">この力は標準的なので、はじめは何も選んでいません。気になる様子があれば選んでください。</p>'}<div class="ideas-grid">`;
+    [['s','学校で',SCH],['h','おうちで',HOM]].forEach(([sd,lab,scs])=>{
+      h+=`<div><div class="side-h">${lab}</div>`;
+      scs.forEach(sc=>{h+=`<div class="scn"><h5>${sc}</h5>`+I[sd][sc].map((t,k)=>{n++;const key=pkKey(i.dom,sd,sc,k);
+        return `<label class="ck" for="pk${n}"><input type="checkbox" id="pk${n}" data-pk="${esc(key)}" ${isPicked(r,i,sd,sc,k)?'checked':''}><span class="ck-t">${t}</span><span class="ck-on">PDFにのせる</span></label>`;}).join('')+`</div>`;});
+      h+=`</div>`;});
+    h+=`</div></details>`;});
+  return h+`</div></div>`;
+}
+function picksText(r,A){
+  const L=[];const s=pickedList(r,A,'s'),hm=pickedList(r,A,'h');
+  if(s.length){L.push('■学校での手立て');s.forEach(p=>L.push(`・［${p.i.short}｜${p.sc}］${p.text}`));}
+  if(hm.length){L.push('■家庭へ伝えること');hm.forEach(p=>L.push(`・［${p.i.short}｜${p.sc}］${p.text}`));}
+  return L.join('\n');
+}
+function copyText(text,done){
+  const fb=()=>{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
+    let ok=false;try{ok=document.execCommand('copy');}catch(e){}ta.remove();done(ok?'コピーしました':'コピーできませんでした。メモ欄を選択してコピーしてください');};
+  try{navigator.clipboard.writeText(text).then(()=>done('コピーしました')).catch(fb);}catch(e){fb();}
+}
+
+/* ===== 検査のイメージ タブ ===== */
+let imgVer=null;
+function renderImage(){
+  const v=imgVer||cur().ver, V=VERS[v];
+  let h=`<h2>WISCってどんな検査？</h2>
+  <p class="prose" style="margin:0 0 12px">WISC（ウィスク）は、5歳0か月から16歳11か月までの子どもを対象にした知能検査です。検査者と子どもが1対1で机をはさんで座り、ことばの質問に答えたり、積木や絵を使った課題に取り組んだりします。課題は「ことばで考える」「見て考える」「聞いて覚える」「すばやく作業する」などの領域に分かれていて、どの力が得意でどの力に時間がかかるかという、力のバランスが分かります。</p>
+  <div class="facts">
+    <div class="fact"><div class="k">対象</div><div class="v">5歳0か月〜16歳11か月</div></div>
+    <div class="fact"><div class="k">形式</div><div class="v">検査者と1対1の個別検査</div></div>
+    <div class="fact"><div class="k">時間</div><div class="v">おおむね60〜90分</div><div class="small muted">子どものペースで休憩をはさむことも</div></div>
+    <div class="fact"><div class="k">実施する人</div><div class="v">研修を受けた心理士・教員など</div><div class="small muted">教育センター・医療機関・相談機関など</div></div>
+    <div class="fact"><div class="k">結果の数値</div><div class="v">IQ・指標得点：平均100</div><div class="small muted">評価点（下位検査）は平均10</div></div>
+  </div>
+  <h3 style="margin:18px 0 8px">検査の流れ</h3>
+  <div class="flow">
+    <div><b>相談・申し込み</b><br><span class="small">学校や保護者が困りごとを整理し、検査の目的を確かめます。</span></div>
+    <div><b>検査当日</b><br><span class="small">1対1で課題に取り組みます。検査者は答えだけでなく、取り組み方や様子も記録します。</span></div>
+    <div><b>結果の説明</b><br><span class="small">数値と様子をあわせた報告書をもとに、得意・苦手を説明します。</span></div>
+    <div><b>支援を考える</b><br><span class="small">学校と家庭で、学び方や手立てを一緒に考えます。</span></div>
+  </div>
+  <h3 style="margin:18px 0 8px">検査の組み立て</h3>
+  <div class="seg" id="imgSeg" style="max-width:420px;margin-bottom:10px">${['V','IV','III'].map(k=>`<button data-iv="${k}" aria-pressed="${k===v}">${VERS[k].label}</button>`).join('')}</div>
+  <div class="struct"><div class="top">${V.full.name}（${V.full.short}）${V.iq.length?`<br><span class="small">${V.iq.map(i=>i.name).join('・')}</span>`:''}</div>
+  <div class="ix">${V.idx.map(i=>`<div class="ixb"><b>${i.name}</b><span class="small muted">${PL[i.dom]}</span><div style="margin-top:4px">${V.subs.filter(s=>s[1]===i.id).map(s=>`<span class="sx ${s[2]?'':'sec'}">${subName(s[0],v)}</span>`).join('')}</div></div>`).join('')}</div>
+  ${V.subs.some(s=>s[1]===null)?`<p class="small muted" style="margin:0">指標に含まれない検査：${V.subs.filter(s=>s[1]===null).map(s=>subName(s[0],v)).join('、')}</p>`:''}
+  <p class="small muted" style="margin:0">実線の枠は主に使う検査、点線の枠は補助・二次の検査です。</p></div>
+  <h3 style="margin:18px 0 8px">それぞれの検査でしていること（${V.label}）</h3>`;
+  V.idx.forEach(i=>{const list=V.subs.filter(s=>s[1]===i.id);if(!list.length)return;
+    h+=`<h4 style="margin:14px 0 6px;font-size:.95rem">${i.name}　<span class="small muted">${DOM[i.dom].what}</span></h4><div class="subx-grid">`+
+    list.map(([c,,pr])=>`<div class="subx"><div class="hd" style="display:flex;justify-content:space-between;gap:8px"><b>${subName(c,v)}</b>${pr?'':'<span class="tagsec">補助</span>'}</div>
+      <p style="margin:0;font-size:.9rem">${SUBX[c][0]}</p><dl><dt>みている力</dt><dd>${SUBX[c][1]}</dd><dt>学校で似た場面</dt><dd>${SUBX[c][2]}</dd></dl></div>`).join('')+`</div>`;});
+  const other=V.subs.filter(s=>s[1]===null);
+  if(other.length)h+=`<div class="subx-grid" style="margin-top:10px">${other.map(([c])=>`<div class="subx"><b>${subName(c,v)}</b><p style="margin:0;font-size:.9rem">${SUBX[c][0]}</p><dl><dt>みている力</dt><dd>${SUBX[c][1]}</dd></dl></div>`).join('')}</div>`;
+  h+=`<h3 style="margin:18px 0 8px">子どもや保護者に伝えるときのポイント</h3>
+  <ul class="prose">
+    <li>子どもには「いろいろなクイズやパズルをするよ」「できなくても大丈夫」と伝えると、安心して取り組めます。</li>
+    <li>検査の前に問題を練習させないでください。練習すると、本来の力が分からなくなります。実際の問題は、検査の公平性を守るため公開されていません。</li>
+    <li>体調や睡眠、その日の気分で結果は変わります。具合が悪いときは日を改めます。</li>
+    <li>同じ検査をくり返すと慣れの影響が出るため、再検査はふつう1〜2年ほど間をあけます。</li>
+    <li>数値は「その子の価値」ではなく、「その子に合った学び方」を考えるための手がかりです。</li>
+  </ul>
+  <p class="small muted">検査について詳しく知りたいときは、「読み方・参考文献」タブの参考文献をご覧ください。課題の説明は、一般に公開されている範囲でのおおまかな説明です。実施時間や対象年齢は版や実施する検査の数によって異なることがあるので、詳しくは検査者やマニュアルで確かめてください。</p>`;
+  $('#imagePanel').innerHTML=h;
+  renderGuidePanel();
+}
+
+/* ===== 検査の仕方シート（A4・一般向け説明） ===== */
+const DC={VC:'#2f8a4a',VS:'#2563a8',FR:'#d0711c',PR:'#2563a8',PO:'#2563a8',WM:'#7b4bb0',FD:'#7b4bb0',PS:'#14838f'};
+const GS={
+ VC:['ことばの意味の理解・概念化・ことばでの推理','長い説明や抽象的なことばが分かりにくい','短く具体的に伝え、図・写真・実物を添える'],
+ VS:['形や空間の関係をとらえる・図形を組み立てる','図形・地図の読み取りや、板書を写すのが苦手','図をことばで補い、マス目や補助線を使う'],
+ FR:['きまりの発見・初めての課題での推理','応用問題や初めての課題でつまずく','「まず」「次に」と手順をことばと図で示す'],
+ PR:['見て考える力（形をとらえ、きまりを推理する）','図形や応用問題でつまずく','具体物で確かめ、手順を見える形にする'],
+ PO:['目で見た情報をまとめ、全体をとらえる','図形や組み立てが苦手','完成見本を示し、ことばでも説明する'],
+ WM:['情報を一時的に覚えながら、頭の中で操作する','いくつかの指示を覚えにくい','指示は1つずつ。メモ・チェックリストを使う'],
+ FD:['注意を保ち、聞いたことを覚えておく','指示を忘れやすい・注意がそれやすい','指示は1つずつ。目に見える形で残す'],
+ PS:['目で見た情報をすばやく正確に処理する','テスト・板書・書字に時間がかかる','時間延長・量の調整・ICTで負担を減らす']
+};
+function icon(dom,size){const c=DC[dom]||'#1d5a86',z=size||34;let g='';
+  if(dom==='VC')g=`<path d="M9 11h22a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H19l-6 5v-5H9a3 3 0 0 1-3-3V14a3 3 0 0 1 3-3z" fill="none" stroke="${c}" stroke-width="2.4" stroke-linejoin="round"/><circle cx="14" cy="19" r="1.8" fill="${c}"/><circle cx="20" cy="19" r="1.8" fill="${c}"/><circle cx="26" cy="19" r="1.8" fill="${c}"/>`;
+  else if(dom==='VS'||dom==='PO'||dom==='PR')g=`<path d="M20 7l11 6v13l-11 6-11-6V13z" fill="${c}" fill-opacity=".18" stroke="${c}" stroke-width="2.2" stroke-linejoin="round"/><path d="M9 13l11 6 11-6M20 19v13" fill="none" stroke="${c}" stroke-width="2.2"/>`;
+  else if(dom==='FR')g=`<circle cx="17" cy="17" r="8.5" fill="none" stroke="${c}" stroke-width="2.6"/><path d="M23.5 23.5l8 8" stroke="${c}" stroke-width="3.2" stroke-linecap="round"/><path d="M13 17h8M17 13v8" stroke="${c}" stroke-width="2" stroke-linecap="round"/>`;
+  else if(dom==='WM'||dom==='FD')g=`<rect x="7" y="13" width="18" height="18" rx="3" fill="#ffffff" stroke="${c}" stroke-width="2"/><rect x="11" y="9" width="18" height="18" rx="3" fill="#ffffff" stroke="${c}" stroke-width="2"/><rect x="15" y="5" width="18" height="18" rx="3" fill="${c}" fill-opacity=".18" stroke="${c}" stroke-width="2"/><text x="24" y="18.5" text-anchor="middle" font-size="10" font-weight="700" fill="${c}" font-family="sans-serif">123</text>`;
+  else if(dom==='PS')g=`<circle cx="20" cy="22" r="11" fill="none" stroke="${c}" stroke-width="2.6"/><path d="M17 7h6M20 7v4M29 12l2-2" stroke="${c}" stroke-width="2.6" stroke-linecap="round"/><path d="M20 22V16M20 22l4 3" stroke="${c}" stroke-width="2.6" stroke-linecap="round"/>`;
+  return `<svg width="${z}" height="${z}" viewBox="0 0 40 40" aria-hidden="true">${g}</svg>`;}
+const ICON={
+  head:`<svg width="74" height="74" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="38" fill="#e3eef8"/><path d="M27 64V53c-6-4-9-11-9-18 0-12 10-21 22-21s22 8 22 19l5 9-5 2v7c0 3-2 5-5 5h-6v8" fill="#ffffff" stroke="#1d5a86" stroke-width="2.6" stroke-linejoin="round"/><path d="M30 33c0-5 4-8 8-8 2-3 7-3 9 0 4 0 7 3 6 7 3 2 2 7-1 8-1 3-5 4-7 2-2 3-7 3-9 0-4 1-7-2-6-5-2-1-2-4 0-4z" fill="#cfe1f2" stroke="#1d5a86" stroke-width="2"/><path d="M38 28v13M45 30v10M33 35h20" stroke="#1d5a86" stroke-width="1.6" stroke-linecap="round"/></svg>`,
+  chart:`<svg width="74" height="74" viewBox="0 0 80 80" aria-hidden="true"><rect x="12" y="46" width="12" height="22" rx="2" fill="#2f8a4a"/><rect x="30" y="36" width="12" height="32" rx="2" fill="#2563a8"/><rect x="48" y="26" width="12" height="42" rx="2" fill="#e0a21b"/><path d="M10 38l18-12 14 6 24-18" fill="none" stroke="#1d5a86" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M58 13h9v9" fill="none" stroke="#1d5a86" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  scene:`<svg width="230" height="128" viewBox="0 0 230 128" aria-hidden="true">
+    <rect x="0" y="0" width="230" height="128" rx="10" fill="#f1f6fb"/>
+    <circle cx="44" cy="40" r="13" fill="#f2d4b5" stroke="#1c2632" stroke-width="1.6"/><path d="M31 37c2-11 24-11 26 0-6-5-20-5-26 0z" fill="#3b3b46"/>
+    <path d="M22 98c0-22 10-36 22-36s22 14 22 36" fill="#2563a8" stroke="#1c2632" stroke-width="1.6"/>
+    <circle cx="186" cy="50" r="11" fill="#f2d4b5" stroke="#1c2632" stroke-width="1.6"/><path d="M175 46c3-10 19-10 22 0-6-4-16-4-22 0z" fill="#7a4a2a"/>
+    <path d="M168 100c0-18 8-30 18-30s18 12 18 30" fill="#e0a21b" stroke="#1c2632" stroke-width="1.6"/>
+    <rect x="18" y="86" width="194" height="10" rx="3" fill="#b98a5c" stroke="#1c2632" stroke-width="1.6"/><path d="M34 96v24M196 96v24" stroke="#1c2632" stroke-width="3"/>
+    <rect x="70" y="72" width="34" height="14" rx="2" fill="#ffffff" stroke="#1c2632" stroke-width="1.4"/><path d="M87 72v14" stroke="#1c2632" stroke-width="1.2"/>
+    <rect x="114" y="74" width="12" height="12" fill="#d64545" stroke="#1c2632" stroke-width="1.2"/><rect x="127" y="74" width="12" height="12" fill="#ffffff" stroke="#1c2632" stroke-width="1.2"/><path d="M127 86l12-12v12z" fill="#d64545"/><rect x="140" y="74" width="12" height="12" fill="#d64545" stroke="#1c2632" stroke-width="1.2"/>
+    <circle cx="66" cy="78" r="6" fill="#ffffff" stroke="#1c2632" stroke-width="1.4"/><path d="M66 74v4l3 2" stroke="#1c2632" stroke-width="1.2" fill="none"/>
+    <rect x="96" y="12" width="50" height="22" rx="11" fill="#ffffff" stroke="#1d5a86" stroke-width="1.6"/><text x="121" y="27" text-anchor="middle" font-size="11" font-weight="700" fill="#1d5a86" font-family="sans-serif">1対1</text>
+  </svg>`,
+  talk:`<svg width="30" height="30" viewBox="0 0 40 40" aria-hidden="true"><path d="M6 9h18a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3h-9l-5 4v-4H6a3 3 0 0 1-3-3v-8a3 3 0 0 1 3-3z" fill="#e3eef8" stroke="#1d5a86" stroke-width="2"/><path d="M31 15h3a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3h-2v4l-5-4h-6a3 3 0 0 1-3-3" fill="none" stroke="#1d5a86" stroke-width="2"/></svg>`,
+  blocks:`<svg width="30" height="30" viewBox="0 0 40 40" aria-hidden="true"><rect x="6" y="18" width="13" height="13" fill="#d64545" stroke="#1c2632" stroke-width="1.6"/><rect x="21" y="18" width="13" height="13" fill="#ffffff" stroke="#1c2632" stroke-width="1.6"/><path d="M21 31l13-13v13z" fill="#d64545"/><rect x="13" y="5" width="13" height="13" fill="#d64545" stroke="#1c2632" stroke-width="1.6"/></svg>`,
+  doc:`<svg width="30" height="30" viewBox="0 0 40 40" aria-hidden="true"><path d="M9 4h16l7 7v25H9z" fill="#ffffff" stroke="#1d5a86" stroke-width="2" stroke-linejoin="round"/><rect x="14" y="24" width="4" height="7" fill="#2f8a4a"/><rect x="20" y="19" width="4" height="12" fill="#2563a8"/><rect x="26" y="15" width="3" height="16" fill="#e0a21b"/></svg>`,
+  hands:`<svg width="30" height="30" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 14c-2-4-9-4-9 1 0 4 9 9 9 9s9-5 9-9c0-5-7-5-9-1z" fill="#2f8a4a"/><path d="M4 22l6 10h10M36 22l-6 10H20" fill="none" stroke="#1d5a86" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  star:`<svg width="34" height="34" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 4l4.8 10 11 1.4-8 7.6 2 10.8L20 28.6 10.2 33.8l2-10.8-8-7.6 11-1.4z" fill="#e0a21b"/></svg>`,
+  bulb:`<svg width="30" height="30" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 5a11 11 0 0 0-6 20v4h12v-4a11 11 0 0 0-6-20z" fill="#fde7a8" stroke="#1d5a86" stroke-width="2"/><path d="M15 33h10M17 37h6" stroke="#1d5a86" stroke-width="2" stroke-linecap="round"/></svg>`
+};
+const VNEW={
+ V:{t:'WISC-Vで変わったところ',rows:[['指標が5つに','WISC-IVの「知覚推理」が「視空間」と「流動性推理」に分かれ、見て考える力をより細かくとらえられる'],['見て覚える力も','ワーキングメモリーで、聞いて覚える力に加え、見て覚える力（絵のスパン）も分かる']]},
+ IV:{t:'WISC-IVの特徴',rows:[['4つの指標が中心','WISC-IIIの言語性IQ・動作性IQをやめ、4つの指標で力のバランスを見る'],['ワーキングメモリー','「注意記憶」が「ワーキングメモリー」になり、覚えながら考える力を重視']]},
+ III:{t:'WISC-IIIについて',rows:[['IQが3つ','全検査IQに加え、言語性IQと動作性IQを出す'],['現在は改訂済み','現在はWISC-IV・WISC-Vが使われている。過去の報告書を読むときの参考に']]}
+};
+const VYEAR={V:'日本版は2022年刊行',IV:'日本版は2010年刊行',III:'日本版は1998年刊行'};
+function guideSheet(v){
+  const V=VERS[v];
+  const rows=V.idx.map((i,n)=>{const g=GS[i.dom],c=DC[i.dom];const subs=V.subs.filter(s=>s[1]===i.id&&s[2]).map(s=>subName(s[0],v)).join('・');
+    return `<tr><td><div class="gi"><span class="gn" style="background:${c}">${n+1}</span>${icon(i.dom,30)}<b style="color:${c}">${i.name.replace(/指標$|（群指数）/,'')}</b><small>${i.id}</small></div></td><td>${g[0]}</td><td class="gsub">${subs}</td><td>${g[1]}</td><td>${g[2]}</td></tr>`;}).join('');
+  const nw=VNEW[v];
+  return `<div class="sheet gsheet">
+  <div class="g-top">${ICON.head}<div class="g-ttl"><h1>WISC（ウィスク）を1枚で理解</h1><p>${V.label}の検査の仕方と、見方・支援のヒント</p></div>${ICON.chart}</div>
+  <table class="g-info"><tr><th>対象</th><td>5歳0か月〜16歳11か月の子ども</td><th>形式</th><td>検査者と1対1、およそ60〜90分</td></tr>
+    <tr><th>目的</th><td>得意・苦手の認知の特徴をとらえ、支援につなげる</td><th>この版</th><td>${V.label}（${VYEAR[v]}）</td></tr></table>
+  <p class="g-cau">※ この検査だけで、発達障害などの診断が決まるものではありません。</p>
+  <section><h2 class="g-h">${ICON.bulb}<span>検査はこんなふうに進みます</span></h2>
+    <div class="g-flow-wrap"><div class="g-scene">${ICON.scene}<p>机をはさんで1対1。ことばの質問に答えたり、積木や絵の課題に取り組んだりします。時間を計る課題もあります。</p></div>
+    <ol class="g-flow">
+      <li>${ICON.talk}<div><b>相談・申し込み</b><span>困りごとを整理し、検査の目的を確かめる</span></div></li>
+      <li>${ICON.blocks}<div><b>検査当日</b><span>答えだけでなく、取り組み方や様子も記録する</span></div></li>
+      <li>${ICON.doc}<div><b>結果の説明</b><span>数値と様子をあわせた報告書で、得意・苦手を説明</span></div></li>
+      <li>${ICON.hands}<div><b>支援を考える</b><span>学校と家庭で、学び方や手立てを一緒に考える</span></div></li>
+    </ol></div>
+  </section>
+  <section><h2 class="g-h">${ICON.doc}<span>${V.idx.length}つの${v==='III'?'群指数':'指標'}と支援のヒント</span></h2>
+    <table class="g-tbl"><tr><th style="width:158px">${v==='III'?'群指数':'指標'}</th><th>何をみる？</th><th style="width:100px">主な検査</th><th>困り感の例</th><th>支援のヒント</th></tr>${rows}</table>
+  </section>
+  <div class="g-two">
+    <section><h2 class="g-h">${ICON.chart.replace(/width="74" height="74"/,'width="30" height="30"')}<span>数値の目安</span></h2>
+      <table class="g-num"><tr><th>得点（平均100）</th><th>目安</th></tr><tr><td>85〜115</td><td>平均の範囲（同じ年齢の約68%）</td></tr><tr><td>85未満</td><td>困り感が出やすいことがある</td></tr><tr><td>115以上</td><td>得意として生かしやすい</td></tr></table>
+      <p class="g-small">下位検査の評価点は平均10（7〜13が平均の範囲）。</p></section>
+    <div class="g-star">${ICON.star}<p>大切なのは、IQの高さだけでなく<br><b>「指標の間の差（でこぼこ）」</b>を見ること。</p></div>
+  </div>
+  <div class="g-two">
+    <section class="g-box"><h3>${nw.t}</h3>${nw.rows.map(r=>`<p><b>${r[0]}</b>${r[1]}</p>`).join('')}</section>
+    <section class="g-box"><h3>直接は測りにくいこと</h3><ul><li>実行機能（計画・切り替え・衝動の抑制）</li><li>社会性・コミュニケーション</li><li>気持ちの調整（不安・怒り・ストレスへの対処）</li></ul><p class="g-small">→ 行動観察や日常の様子とあわせて理解する</p></section>
+  </div>
+  <div class="g-end">${ICON.hands.replace(/width="30" height="30"/,'width="40" height="40"')}<p>WISCは「答え」ではなく、子どもを理解するための<b>手がかり</b>。<br>日常の困りごとの観察と結びつけ、保護者・先生・専門家で支援を共有することが大切です。</p></div>
+  <div class="sh-foot"><span>参考：日本版WISC-V／WISC-IV 理論・解釈マニュアル（日本文化科学社）ほか。検査の問題や手順の詳細は公開されていません。利用は各自の責任でお願いします。<br>WISC、Wechslerは、NCS Pearson, Inc.の商標または登録商標です。このアプリは、検査の発行元・日本版の刊行元とは関係がありません。</span><span>知能検査 見立てナビ</span></div>
+  </div>`;
+}
+function renderGuidePanel(){
+  const v=imgVer||cur().ver;
+  $('#gsPanel').innerHTML=`<h2>検査の仕方をA4・1枚にまとめる</h2>
+  <p class="small muted" style="margin:0 0 10px">WISCがどんな検査か、イラスト入りで1枚にまとめた説明資料です。お子さん個人の結果は入らないので、校内研修や、保護者に検査を紹介するときの資料として使えます。</p>
+  <div class="seg" style="max-width:420px">${['V','IV','III'].map(k=>`<button data-iv="${k}" aria-pressed="${k===v}">${VERS[k].label}</button>`).join('')}</div>
+  <div class="pv" id="gpWrap"><div class="pv-in" id="gpIn">${guideSheet(v)}</div></div>
+  <p class="small muted" id="gpMsg" style="margin:6px 0 0"></p>
+  <div class="btnrow"><button class="btn primary" id="btnGuidePdf">この説明シートをPDFで保存</button><span class="small muted" id="gpPdfMsg" role="status"></span></div>`;
+  fitBox('gpWrap','gpIn','gpMsg');
+}
+function fitBox(w,i,m){const wrap=$('#'+w),inn=$('#'+i);if(!wrap||!inn||!inn.firstElementChild||!wrap.clientWidth)return;
+  const s=wrap.clientWidth/794;inn.style.transform=`scale(${s})`;const h=inn.firstElementChild.offsetHeight;wrap.style.height=(Math.max(h,1123)*s)+'px';
+  const mm=$('#'+m);if(mm)mm.textContent=h>1124?`約${Math.round(1123/h*100)}%に縮小して1枚に収めます。`:'A4縦1枚に収まります。';}
+async function sheetToPDF(html,name,msg){
+  if(!window.html2canvas||!window.jspdf){msg('PDFの部品を読み込めませんでした。ネット接続を確認して、ページを開き直してください。');return;}
+  msg('PDFを作っています…');
+  const host=$('#sheetHost');host.innerHTML=html;
+  try{await Promise.all([document.fonts.load('400 12px "BIZ UDPGothic"'),document.fonts.load('700 12px "BIZ UDPGothic"'),document.fonts.load('700 23px "BIZ UDPMincho"')]);await document.fonts.ready;}catch(e){}
+  let blob,pdf;
+  try{const canvas=await html2canvas(host.firstElementChild,{scale:2,backgroundColor:'#ffffff',logging:false});
+    pdf=new window.jspdf.jsPDF({unit:'mm',format:'a4',orientation:'portrait'});
+    let w=210,h=canvas.height*210/canvas.width,x=0;if(h>297){w=210*297/h;h=297;x=(210-w)/2;}
+    pdf.addImage(canvas.toDataURL('image/jpeg',.93),'JPEG',x,0,w,h);blob=pdf.output('blob');
+  }catch(e){msg('PDFを作れませんでした。もう一度お試しください。');host.innerHTML='';return;}
+  host.innerHTML='';
+  let dl=null;try{dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null;}catch(e){dl=null;}
+  if(dl){try{await dl.save({filename:name,data:blob});msg('保存しました');}
+    catch(e){if(e&&e.code==='declined')msg('保存をやめました');else if(e&&e.code==='rate_limited')msg('少し待ってから、もう一度押してください');else{try{pdf.save(name);msg('保存しました');}catch(_){msg('この画面では保存できませんでした');}}}}
+  else{try{pdf.save(name);msg('保存しました');}catch(e){msg('この画面では保存できませんでした');}}
+}
+
+/* ===== A4シート ===== */
+let pvKind='teacher';
+const pos=(v,o)=>Math.max(0,Math.min(100,(v-o.min)/(o.max-o.min)*100));
+const CO={min:40,max:160,lo:85,hi:115,center:100,ticks:[40,55,70,85,100,115,130,145,160]};
+const SO={min:1,max:19,lo:7,hi:13,center:10,ticks:[1,4,7,10,13,16,19]};
+function hbars(rows,o,labW){
+  const cols=`grid-template-columns:${labW}px minmax(0,1fr) 58px`;
+  let h='<div class="hb">';
+  rows.forEach(r=>{
+    if(r.grp){h+=`<div class="hb-grp">${esc(r.grp)}</div>`;return;}
+    const pc=pos(o.center,o),pv=pos(r.v,o);
+    h+=`<div class="hb-row" style="${cols}"><div class="hb-lab">${esc(r.lab)}${r.sub?`<small>${esc(r.sub)}</small>`:''}</div>
+      <div class="hb-tr"><div class="hb-band" style="left:${pos(o.lo,o)}%;width:${pos(o.hi,o)-pos(o.lo,o)}%"></div>
+      <div class="hb-bar ${r.cls||''}" style="left:${Math.min(pc,pv)}%;width:${Math.max(Math.abs(pv-pc),.8)}%"></div>
+      <div class="hb-ctr" style="left:${pc}%"></div></div>
+      <div class="hb-val">${r.v}${r.mark?` <small>${r.mark}</small>`:''}</div></div>`;});
+  h+=`<div class="hb-row" style="${cols}"><div></div><div class="hb-ax">${o.ticks.map(t=>`<span style="left:${pos(t,o)}%">${t}</span>`).join('')}</div><div></div></div></div>`;
+  return h;
+}
+function today(){const d=new Date();return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;}
+function metaTable(r,A){return `<table class="sh-meta"><tr><td>児童（ID）</td><td>${esc(r.label||'—')}</td></tr><tr><td>検査</td><td>${A.V.label}</td></tr><tr><td>実施時期</td><td>${esc(r.date||'—')}</td></tr><tr><td>作成日</td><td>${today()}</td></tr>${(r.author??state.author)?`<tr><td>作成者</td><td>${esc(r.author??state.author)}</td></tr>`:''}</table>`;}
+function teacherPoints(r,A){
+  const V=A.V,P=[];const S=A.idx.filter(i=>i.st==='s'),W=A.idx.filter(i=>i.st==='w'),lo=A.idx.filter(i=>i.v<85&&i.st!=='w');
+  const g=+(r.sc||{}).GAI,c=+(r.sc||{}).CPI;
+  P.push(`<b>全体の水準：</b>${A.fullV!=null?`${V.full.short} ${A.fullV}（${cat(A.fullV)}、%ile目安 ${pct(A.fullV)}）。`:`${V.full.short}は未入力。`}`+
+    (A.spread>=TH_SPREAD?`指標間の最大差が${A.spread}点と大きいため、${V.full.short}は代表値として慎重に扱い、指標ごとに解釈する。`+(okC(g)?`GAI ${g}も参考にする。`:''):`指標間の最大差は${A.spread}点で、全体の水準も参考にできる。`));
+  P.push(`<b>個人内の強み・弱み：</b>`+(S.length||W.length?[S.length?`強み ${S.map(i=>`${i.short}（${i.diff>=0?'+':''}${i.diff.toFixed(1)}）`).join('、')}`:'',W.length?`弱み ${W.map(i=>`${i.short}（${i.diff.toFixed(1)}）`).join('、')}`:''].filter(Boolean).join('／'):'目立った差はない。')+`（本人の指標平均 ${A.mean.toFixed(1)} との差）`);
+  if(lo.length)P.push(`<b>同年齢と比べて低めの力：</b>${lo.map(i=>`${i.short} ${i.v}`).join('、')}。個人内の差は小さくても支援の対象になる。`);
+  if(okC(g)&&okC(c)&&Math.abs(g-c)>=TH_PAIR)P.push(`<b>GAIとCPI：</b>GAI ${g}／CPI ${c}。${g>c?'考える力に比べ、記憶・処理の負担で力を出しにくい可能性。':'記憶・処理に比べ、推理・言語の力が低め。'}`);
+  P.push(`<b>支援の方向：</b>`+(S.length?`強み（${S.map(i=>i.short).join('・')}）を学び方の入り口にし、`:'')+(W.length||lo.length?`${[...W,...lo].map(i=>i.short).join('・')}の負担を減らす手立てを選ぶ（④）。`:'学級全体の配慮の中で様子を見る。'));
+  return P;
+}
+function teacherSheet(r,A){
+  const V=A.V;
+  const iRows=[];
+  if(A.fullV!=null)iRows.push({lab:V.full.short,v:A.fullV,cls:'f'});
+  A.idx.forEach(i=>iRows.push({lab:i.short,v:i.v,cls:i.st,mark:i.st==='s'?'▲':i.st==='w'?'▼':''}));
+  const sRows=[];let g=null;
+  A.subs.forEach(s=>{if(s.ix!==g){g=s.ix;const ix=V.idx.find(x=>x.id===g);sRows.push({grp:ix?ix.short:'その他'});}
+    sRows.push({lab:s.name+(s.pr?'':'＊'),v:s.v,cls:s.st,mark:s.st==='s'?'▲':s.st==='w'?'▼':''});});
+  const tbl=`<table class="sh-tbl"><tr><th>指標</th><th>得点</th><th>記述分類</th><th>%ile目安</th><th>個人内差</th><th>判定</th></tr>`+
+    (A.fullV!=null?`<tr><td>${V.full.name}</td><td class="n">${A.fullV}</td><td>${cat(A.fullV)}</td><td class="n">${pct(A.fullV)}</td><td></td><td></td></tr>`:'')+
+    V.iq.filter(i=>okC(+(r.sc||{})[i.id])).map(i=>{const v=+r.sc[i.id];return `<tr><td>${i.name}</td><td class="n">${v}</td><td>${cat(v)}</td><td class="n">${pct(v)}</td><td></td><td></td></tr>`;}).join('')+
+    A.idx.map(i=>`<tr><td>${i.name}</td><td class="n">${i.v}</td><td>${cat(i.v)}</td><td class="n">${pct(i.v)}</td><td class="n">${i.diff>=0?'+':''}${i.diff.toFixed(1)}</td><td>${i.st==='s'?'▲ 強み':i.st==='w'?'▼ 弱み':'—'}</td></tr>`).join('')+
+    V.extra.filter(i=>okC(+(r.sc||{})[i.id])).map(i=>{const v=+r.sc[i.id];return `<tr><td>${i.name}</td><td class="n">${v}</td><td>${cat(v)}</td><td class="n">${pct(v)}</td><td></td><td></td></tr>`;}).join('')+`</table>`;
+  const notes=[...A.pairs.slice(0,4).map(p=>`${p.d>0?p.a.short:p.b.short} ＞ ${p.d>0?p.b.short:p.a.short}（${Math.abs(p.d)}点差）`)];
+  const memo=r.memoEdit??memoText(r,A);
+  const s=pickedList(r,A,'s').slice(0,8),hm=pickedList(r,A,'h').slice(0,8);
+  let homeIdeas='';{let gg='';hm.forEach(p=>{if(p.i.dom!==gg){gg=p.i.dom;homeIdeas+=`<p class="dh"><b>${p.i.short}</b>（${PL[p.i.dom]}）</p>`;}homeIdeas+=`<p>・［${p.sc}］${esc(p.text)}</p>`;});}
+  let ideas='';{let gg='';s.forEach(p=>{if(p.i.dom!==gg){gg=p.i.dom;ideas+=`<p class="dh"><b>${p.i.short}</b>${p.i.st==='s'?'（強み）':p.i.st==='w'?'（弱み）':p.i.v<85?'（低め）':''}</p>`;}ideas+=`<p>・［${p.sc}］${esc(p.text)}</p>`;});}
+  return `<div class="sheet compact" style="gap:9px">
+  <div class="sh-head"><div><div class="sh-kicker">校内資料・取扱注意</div><h1>知能検査 見立てシート（教師用）</h1></div>${metaTable(r,A)}</div>
+  <div class="t-pts"><div class="p-sum-k">読み取りのポイント</div><ul>${teacherPoints(r,A).map(x=>`<li>${x}</li>`).join('')}</ul></div>
+  <section><h2>① 数値の一覧</h2><p class="t-hint">記述分類・%ileは同じ年齢の子との比較。個人内差は本人の指標平均との差で、▲▼は±${TH_IDX}点以上。</p>${tbl}</section>
+  <section><h2>② プロフィール</h2><p class="t-hint">縦線が平均（指標100／評価点10）、薄い帯が平均±1SD（85〜115／7〜13）。棒は平均からのずれ。＊は補助・二次検査。</p>
+  <div class="sh-two" style="grid-template-columns:${A.subs.length?'1fr 1fr':'1fr'}">
+    <div>${hbars(iRows,CO,78)}${notes.length?`<p style="font-size:10.5px;margin-top:6px"><b>差の大きい組み合わせ：</b>${notes.join('／')}</p>`:''}
+      ${r.memoEdit==null&&A.subs.length?`<div style="margin-top:10px"><h2>③ 行動観察・気づき</h2><p class="t-hint">検査中の様子・教室での様子（手書き）</p><div class="t-lines"><i></i><i></i><i></i><i></i></div></div>`:''}</div>
+    ${A.subs.length?`<div>${hbars(sRows,SO,78)}</div>`:''}
+  </div></section>
+  ${r.memoEdit!=null?`<section><h2>③ 見立てメモ</h2><div class="sh-memo">${esc(memo)}</div></section>`:(A.subs.length?'':`<section><h2>③ 行動観察・気づき（手書き欄）</h2><div class="t-lines"><i></i><i></i><i></i></div></section>`)}
+  <section><h2>④ 学校での手立て（選んだもの）</h2>${s.length?`<div class="sh-ideas">${ideas}</div>`:'<p class="t-hint">「学校・おうちでの手立て（候補）」で、のせる項目を選んでください。</p>'}</section>
+  <section class="t-home"><h2>⑤ 家庭へ伝えること</h2><p class="t-hint">面談で伝える内容の下書き。家庭での様子を聞き取り、できそうなことを保護者と一緒に1〜2つにしぼる。</p>
+    ${hm.length?`<div class="sh-ideas">${homeIdeas}</div>`:'<p class="t-hint">「おうちで」の候補から、のせる項目を選んでください。</p>'}
+    <div class="t-home-w"><div><b>家庭での様子（聞き取り）</b><div class="t-lines"><i></i></div></div><div><b>一緒に決めたこと・次の連絡</b><div class="t-lines"><i></i></div></div></div>
+  </section>
+  <div class="sh-foot"><span>参考ツールによる目安で、専門家（検査者）の解釈に代わるものではない。利用は各自の責任で行うこと。有意差・標準出現率は各版のマニュアルの臨界値で確認すること。数値は行動観察・生育歴・学習の様子と合わせて解釈する。</span><span>作成者　<span class="sh-sign">${esc(r.author??state.author??'')}</span></span></div>
+  </div>`;
+}
+function renderPreview(){
+  const box=$('#pvIn');if(!box)return;const r=cur(),A=analyze(r);if(A.idx.length<2)return;
+  box.innerHTML=teacherSheet(r,A);
+  fitPreview();
+}
+function fitPreview(){const wrap=$('#pvWrap'),inn=$('#pvIn');if(!wrap||!inn.firstElementChild)return;
+  const s=wrap.clientWidth/794;inn.style.transform=`scale(${s})`;const h=inn.firstElementChild.offsetHeight;
+  wrap.style.height=(Math.max(h,1123)*s)+'px';
+  $('#pvMsg').textContent=h>1124?`内容が多いため、約${Math.round(1123/h*100)}%に縮小して1枚に収めます。見立てメモを短くすると文字が大きくなります。`:'A4縦1枚に収まります。';}
+window.addEventListener('resize',()=>{fitPreview();fitBox('gpWrap','gpIn','gpMsg');});
+async function exportPDF(kind){
+  const msg=t=>{const m=$('#pdfMsg');if(m)m.textContent=t;};
+  const r=cur(),A=analyze(r);if(A.idx.length<2){msg('指標得点を2つ以上入れてください');return;}
+  if(!window.html2canvas||!window.jspdf){msg('PDFの部品を読み込めませんでした。ネット接続を確認して、ページを開き直してください。');return;}
+  msg('PDFを作っています…');
+  const host=$('#sheetHost');host.innerHTML=teacherSheet(r,A);
+  try{await Promise.all([document.fonts.load('400 12px "BIZ UDPGothic"'),document.fonts.load('700 12px "BIZ UDPGothic"'),document.fonts.load('700 23px "BIZ UDPMincho"')]);await document.fonts.ready;}catch(e){}
+  let blob,pdf;
+  try{
+    const canvas=await html2canvas(host.firstElementChild,{scale:2,backgroundColor:'#ffffff',logging:false});
+    pdf=new window.jspdf.jsPDF({unit:'mm',format:'a4',orientation:'portrait'});
+    let w=210,h=canvas.height*210/canvas.width,x=0;if(h>297){w=210*297/h;h=297;x=(210-w)/2;}
+    pdf.addImage(canvas.toDataURL('image/jpeg',.93),'JPEG',x,0,w,h);
+    blob=pdf.output('blob');
+  }catch(e){msg('PDFを作れませんでした。もう一度お試しください。');host.innerHTML='';return;}
+  host.innerHTML='';
+  const name=`知能検査見立てシート_${(r.label||'記録').replace(/[\\/:*?"<>|\s]+/g,'_')}.pdf`;
+  let dl=null;try{dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null;}catch(e){dl=null;}
+  if(dl){try{await dl.save({filename:name,data:blob});msg('保存しました');}
+    catch(e){if(e&&e.code==='declined')msg('保存をやめました');else if(e&&e.code==='rate_limited')msg('少し待ってから、もう一度押してください');else{try{pdf.save(name);msg('保存しました');}catch(_){msg('この画面では保存できませんでした');}}}}
+  else{try{pdf.save(name);msg('保存しました');}catch(e){msg('この画面では保存できませんでした');}}
+}
+
+/* ===== 比較 ===== */
+const SER=[{c:'var(--c1)',m:'circle',d:''},{c:'var(--c2)',m:'square',d:'7 4'},{c:'var(--c3)',m:'tri',d:'2 4'},{c:'var(--c4)',m:'diamond',d:'10 3 2 3'}];
+function marker(m,x,y,c){if(m==='square')return `<rect x="${x-5.5}" y="${y-5.5}" width="11" height="11" fill="${c}"/>`;
+  if(m==='tri')return `<polygon points="${x},${y-7} ${x+7},${y+5} ${x-7},${y+5}" fill="${c}"/>`;
+  if(m==='diamond')return `<polygon points="${x},${y-7} ${x+7},${y} ${x},${y+7} ${x-7},${y}" fill="${c}"/>`;
+  return `<circle cx="${x}" cy="${y}" r="6" fill="${c}"/>`;}
+function axisVal(r,A,ax){const its=VERS[r.ver].idx.filter(i=>i.axis===ax);const f=its.map(i=>A.idx.find(x=>x.id===i.id)).filter(Boolean);
+  if(!f.length)return null;return {v:f.reduce((a,b)=>a+b.v,0)/f.length,st:f.some(x=>x.st==='w')?'w':f.some(x=>x.st==='s')?'s':'n',list:f};}
+function compareSVG(recs){
+  const W=680,H=300,L=46,R=20,T=20,B=40,mn=40,mx=160,y=v=>T+(mx-v)/(mx-mn)*(H-T-B),gap=(W-L-R)/AXES.length,x=k=>L+gap*(k+.5);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="記録ごとの領域プロフィール"><rect class="band" x="${L}" y="${y(115)}" width="${W-L-R}" height="${y(85)-y(115)}"/>`;
+  [40,70,85,100,115,130,160].forEach(t=>s+=`<line class="ax" x1="${L}" x2="${W-R}" y1="${y(t)}" y2="${y(t)}"/><text class="tk" x="${L-8}" y="${y(t)+4}" text-anchor="end">${t}</text>`);
+  s+=`<line class="ctr" x1="${L}" x2="${W-R}" y1="${y(100)}" y2="${y(100)}"/>`;
+  AXES.forEach((a,k)=>s+=`<text class="lb" x="${x(k)}" y="${H-B+24}" text-anchor="middle">${a.n}</text>`);
+  recs.forEach((r,n)=>{const A=analyze(r),S=SER[n%SER.length];const pts=AXES.map((a,k)=>{const q=axisVal(r,A,a.k);return q?[x(k),y(q.v)]:null;});
+    const seg=pts.filter(Boolean);if(seg.length>1)s+=`<polyline fill="none" stroke="${S.c}" stroke-width="2.5" ${S.d?`stroke-dasharray="${S.d}"`:''} points="${seg.map(p=>p.join(',')).join(' ')}"/>`;
+    pts.forEach(p=>{if(p)s+=marker(S.m,p[0]+(n-(recs.length-1)/2)*4,p[1],S.c);});});
+  return s+'</svg>';
+}
+function renderCompare(){
+  const all=state.records;
+  let h=`<h2>版をまたいだ比較</h2><p class="small muted" style="margin:0 0 10px">同じお子さんが、時期を変えて受けた検査の記録を並べます（例：小2でWISC-IV、小5でWISC-V）。版が違うと検査の中身と基準が違うため、数値の上がり下がりより、<b>得意・苦手の形が続いているか</b>を見るために使います。</p>`;
+  if(all.length<2){$('#compare').innerHTML=h+`<div class="empty">記録が2つ以上あると、ここで比べられます。<br>見立てタブの「＋ 新しい記録」から、同じお子さんの別の時期の結果を入れてください。<div class="btnrow" style="justify-content:center"><button class="btn" id="btnCmpDemo">比較のサンプルを追加して見る</button></div></div>`;return;}
+  const sel=(state.cmp||all.map(r=>r.id)).filter(id=>all.some(r=>r.id===id));
+  const recs=all.filter(r=>sel.includes(r.id)).slice(0,4);
+  h+=`<div class="small muted" style="margin-bottom:6px">比べる記録をえらぶ（4つまで）</div><div class="records" style="margin-bottom:12px">${all.map(r=>`<button class="chip" data-cmp="${esc(r.id)}" aria-pressed="${sel.includes(r.id)}">${esc(r.label||'無題')}<span class="muted small"> ${VERS[r.ver].label}</span></button>`).join('')}${all.some(x=>x.id==='sample2')?'':`<button class="chip add" id="btnCmpDemo">＋ サンプルを追加</button>`}</div>`;
+  if(recs.length<2){$('#compare').innerHTML=h+`<div class="empty">記録を2つ以上えらんでください。</div>`;return;}
+  // 自動のまとめ
+  const sum=[];AXES.forEach(a=>{const st=recs.map(r=>{const q=axisVal(r,analyze(r),a.k);return q?q.st:null;}).filter(x=>x!==null);
+    if(st.length<2)return;const w=st.filter(x=>x==='w').length,s=st.filter(x=>x==='s').length;
+    if(w===st.length)sum.push(`<li><span class="badge w">続く苦手</span> <b>${a.n}</b>：どの記録でも相対的な弱みです。長く続く特性として、支援を引き継ぐ根拠になります。</li>`);
+    else if(s===st.length)sum.push(`<li><span class="badge s">続く得意</span> <b>${a.n}</b>：どの記録でも相対的な強みです。学び方の入り口として生かせます。</li>`);
+    else if(w)sum.push(`<li><span class="badge c">一部で苦手</span> <b>${a.n}</b>：${w}つの記録で弱みとして出ています。時期や検査の違い、その日の様子も確かめましょう。</li>`);
+    else if(s)sum.push(`<li><span class="badge n">一部で得意</span> <b>${a.n}</b>：${s}つの記録で強みとして出ています。</li>`);});
+  h+=`<div class="panel" style="padding:12px 14px;background:var(--sunk)"><h3 style="margin-bottom:6px">比べて分かること</h3>${sum.length?`<ul style="margin:0;padding-left:1.2em">${sum.join('')}</ul>`:'<p class="small" style="margin:0">どの記録でも、領域ごとの大きな得意・苦手は見られません。</p>'}</div>`;
+  h+=`<div class="chartbox" style="margin-top:12px;max-width:760px">${compareSVG(recs)}</div><div class="legend">${recs.map((r,n)=>{const S=SER[n%SER.length];return `<span><svg width="34" height="14" aria-hidden="true"><line x1="0" x2="34" y1="7" y2="7" stroke="${S.c}" stroke-width="2.5" ${S.d?`stroke-dasharray="${S.d}"`:''}/>${marker(S.m,17,7,S.c)}</svg> ${esc(r.label||'無題')}（${VERS[r.ver].label}）</span>`;}).join('')}</div>
+  <p class="small muted" style="margin:4px 0 12px">WISC-Vの「視覚・推理」は、視空間と流動性推理の平均で描いています。網かけは85〜115。</p>`;
+  h+=`<div class="tablewrap"><table><thead><tr><th>領域</th>${recs.map(r=>`<th>${esc(r.label||'無題')}<br><span class="muted">${VERS[r.ver].label}${r.date?'・'+esc(r.date):''}</span></th>`).join('')}</tr></thead><tbody>`;
+  h+=`<tr><td><b>全検査IQ</b></td>${recs.map(r=>{const v=+(r.sc||{})[VERS[r.ver].full.id];return `<td class="num">${okC(v)?v:'—'}</td>`;}).join('')}</tr>`;
+  AXES.forEach(ax=>{h+=`<tr><td><b>${ax.n}</b></td>`+recs.map(r=>{const A=analyze(r);const its=VERS[r.ver].idx.filter(i=>i.axis===ax.k);
+    return `<td>`+its.map(i=>{const f=A.idx.find(x=>x.id===i.id);return `<div><span class="small">${i.short}</span> <span class="num"><b>${f?f.v:'—'}</b></span>${f&&f.st==='s'?' <span class="badge s">▲</span>':f&&f.st==='w'?' <span class="badge w">▼</span>':''}</div>`;}).join('')+`</td>`;}).join('')+`</tr>`;});
+  h+=`</tbody></table></div><p class="small muted">▲▼は、それぞれの記録の中での相対的な強み・弱みです。全検査IQの差は、版の違い・慣れ・その日の様子でも動くため、伸びや低下の判断には使わないでください。</p>`;
+  $('#compare').innerHTML=h;
+}
+
+/* ===== 対応表・使い方 ===== */
+function renderStatic(){
+  $('#taiou').innerHTML=`<h2>WISC-V・IV・III の対応表</h2>
+  <p class="small muted" style="margin:0 0 10px">名前が変わったり、分かれたりしている指標を横に並べています。</p>
+  <div class="tablewrap"><table><thead><tr><th>領域</th><th>WISC-III</th><th>WISC-IV</th><th>WISC-V</th></tr></thead><tbody>
+  <tr><td><b>全体</b></td><td>全検査IQ（FIQ）<br>言語性IQ（VIQ）／動作性IQ（PIQ）</td><td>全検査IQ（FSIQ）<br><span class="small muted">VIQ・PIQは廃止</span></td><td>全検査IQ（FSIQ）</td></tr>
+  <tr><td><b>言語</b></td><td>言語理解（VC）</td><td>言語理解指標（VCI）</td><td>言語理解指標（VCI）</td></tr>
+  <tr><td><b>視覚・推理</b></td><td>知覚統合（PO）</td><td>知覚推理指標（PRI）</td><td>視空間指標（VSI）<br>流動性推理指標（FRI）<br><span class="small muted">PRIが2つに分かれた</span></td></tr>
+  <tr><td><b>記憶</b></td><td>注意記憶（FD）</td><td>ワーキングメモリー指標（WMI）</td><td>ワーキングメモリー指標（WMI）</td></tr>
+  <tr><td><b>処理速度</b></td><td>処理速度（PS）</td><td>処理速度指標（PSI）</td><td>処理速度指標（PSI）</td></tr>
+  <tr><td><b>補助的な指標</b></td><td>—</td><td>GAI／CPI</td><td>GAI／CPI など</td></tr>
+  </tbody></table></div>
+  <h3 style="margin:18px 0 6px">下位検査の主な移り変わり</h3>
+  <div class="tablewrap"><table><thead><tr><th>下位検査</th><th>III</th><th>IV</th><th>V</th></tr></thead><tbody>
+  ${[['類似・単語','言語理解','言語理解','言語理解'],['知識・理解','言語理解','言語理解（理解は基本／知識は補助）','言語理解（二次）'],['語の推理','—','言語理解（補助）','—'],
+    ['積木模様','知覚統合','知覚推理','視空間'],['絵画完成／絵の完成','知覚統合','知覚推理（補助）','—'],['絵画配列・組合せ','知覚統合','—','—'],
+    ['行列推理','—','知覚推理','流動性推理'],['絵の概念','—','知覚推理','流動性推理（二次）'],['パズル','—','—','視空間（新）'],['バランス','—','—','流動性推理（新）'],
+    ['数唱','注意記憶','ワーキングメモリー','ワーキングメモリー'],['算数','注意記憶','WM（補助）','流動性推理（二次）'],['語音整列','—','ワーキングメモリー','WM（二次）'],['絵のスパン','—','—','ワーキングメモリー（新）'],
+    ['符号・記号探し','処理速度','処理速度','処理速度'],['絵の抹消','—','処理速度（補助）','処理速度（二次）'],['迷路','動作性（補助）','—','—']]
+    .map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join('')}
+  </tbody></table></div>
+  <p class="small muted">補助・二次下位検査の扱いや補助指標の種類は、お手元の記録用紙と実施・採点マニュアルで確認してください。</p>`;
+  $('#guide').innerHTML=`<h2>先生のための読み方（4ステップ）</h2>
+  <ol class="steps">
+    <li><b>全体の水準を見る</b>　全検査IQ（FSIQ）と記述分類で、同じ年齢の子と比べた全体の位置をつかみます。ただし指標間の差が大きい（目安${TH_SPREAD}点以上）ときは、FSIQ一つで子どもを表さず、ステップ2を重視します。</li>
+    <li><b>個人内の強み・弱みを見る</b>　各指標が「本人の指標平均」からどれだけ離れているかを見ます。同年齢と比べて平均的でも、本人の中では強み・弱みということがあります。支援のヒントはここから得られます。</li>
+    <li><b>下位検査と行動観察で確かめる</b>　同じ指標の中で評価点がそろっているか、ばらついているかを見ます。ばらつくときは、検査で何をしたか（「検査のイメージ」タブ）と、報告書の行動観察（取り組み方、集中、ことばの多さなど）を照らし合わせます。</li>
+    <li><b>手立てにつなぐ</b>　強みは学び方の入り口に、弱みは負担を減らす工夫に使います。教室で実際に試し、子どもの様子で見直します。</li>
+  </ol>
+  <h3>ことばのミニ辞典</h3>
+  <dl class="gloss">
+    <dt>合成得点（IQ・指標得点）</dt><dd>いくつかの下位検査をまとめた得点。平均100、標準偏差15。85〜115に同年齢の約68%が入ります。</dd>
+    <dt>評価点</dt><dd>下位検査ごとの得点。平均10、標準偏差3（1〜19）。7〜13に約68%が入ります。</dd>
+    <dt>パーセンタイル</dt><dd>同年齢100人の中で下から何番目くらいかの目安。30なら「100人中、下から30番目くらい」。</dd>
+    <dt>信頼区間</dt><dd>測定の誤差を考えた「本当の得点がありそうな幅」。報告書に90%または95%信頼区間が書かれています。このアプリでは計算していません。</dd>
+    <dt>個人内差</dt><dd>その子自身の平均との差。強み・弱み（▲▼）の判断に使います。</dd>
+    <dt>記述分類</dt><dd>得点を「平均」「平均の下」などのことばで表したもの。</dd>
+    <dt>GAI／CPI</dt><dd>GAIは言語理解と推理（知覚推理など）から求める指標、CPIはワーキングメモリーと処理速度から求める指標。差が大きいときは、記憶や作業の速さが学習の妨げになっていないかを考えます。</dd>
+    <dt>主要・補助（二次）下位検査</dt><dd>指標得点の計算に使う検査と、追加で情報を得るための検査。補助の検査は報告書にない場合もあります。</dd>
+  </dl>
+  <h2 style="margin-top:22px">使い方</h2>
+  <ul><li>「＋ 新しい記録」を押し、記録名（イニシャルやID）と実施時期を入れます。</li>
+  <li>検査の版（V・IV・III）を選び、報告書にある全検査IQと指標得点を入れます。評価点が分かれば「4 評価点」にも入れます。</li>
+  <li>右側（スマホでは下）に、プロフィール・強みと弱み・見立てメモが出ます。</li>
+  <li>「学校・おうちでの手立て（候補）」は、どれもその力に合わせた候補です。チェックは「PDFにのせる」印で、チェックがない項目も参考にできます。</li>
+  <li>「A4で出力」から、教師向けの見立てシート（読み取りのポイント・数値・プロフィール・選んだ手立て）をA4縦1枚のPDFで保存できます。校内資料として扱ってください。</li>
+  <li>同じお子さんが別の時期・版で受けた結果は記録を分けて入れ、「版をまたいだ比較」で続く得意・苦手を確かめます。</li></ul>
+  <h3>判定のしくみ（目安）</h3>
+  <ul><li><b>相対的な強み・弱み：</b>指標得点が本人の指標平均より${TH_IDX}点以上高い／低いもの。評価点は本人平均から±${TH_SUB}以上。</li>
+  <li><b>大きな差：</b>2つの指標の差が${TH_PAIR}点以上。指標間の最大差が${TH_SPREAD}点以上なら、全体IQの解釈に注意を表示。</li>
+  <li><b>記述分類：</b>130以上「非常に高い」、120〜129「高い」、110〜119「平均の上」、90〜109「平均」、80〜89「平均の下」、70〜79「低い」、69以下「非常に低い」。</li>
+  <li>パーセンタイルは正規分布からの計算値で、マニュアルの値とわずかにずれることがあります。</li></ul>
+  <h3>大切な注意</h3>
+  <ul><li>このアプリの基準は解釈の目安です。統計的に有意な差かどうかは、各版のマニュアルにある臨界値・標準出現率で確認してください。</li>
+  <li>数値は「その日、その場面での結果」です。行動観察、生育歴、学習の様子、本人の思いと合わせて見立ててください。</li>
+  <li>検査結果は大切な個人情報です。お子さんの名前は入れず、イニシャルやIDにしてください（作成者は本名でかまいません）。共有端末では使い終わったら記録を削除してください。データはこのブラウザの中だけに保存され、外部には送られません。</li></ul>
+  <h3>ご利用にあたって</h3><p class="small">このアプリは、先生が検査の報告書を読み取るための参考ツールとして、個人が作成したものです。診断や、専門家（検査者）の解釈に代わるものではありません。表示される見立てや手立ては一般的な目安で、正確さを保証するものではありません。ご利用は各自の責任でお願いします。このアプリの利用によって生じた結果について、作成者は責任を負いかねます。</p>
+  <h3>商標と位置づけ</h3><p class="small">WISC、Wechslerは、NCS Pearson, Inc.の商標または登録商標です。このアプリは、検査の発行元・日本版の刊行元とは関係がありません。このアプリは、先生が報告書を読み取るための補助ツールで、専門家（検査者）の解釈に代わるものではありません。</p>
+  <h2 style="margin-top:22px" id="refs">参考文献</h2>
+  <p class="small muted" style="margin:0 0 8px">リンク先は書誌情報（国立国会図書館サーチ・CiNii）や公式ページです。</p>
+  <h3>検査のマニュアル（解釈の根拠）</h3>
+  <ul class="refs">
+    <li>日本版WISC-V刊行委員会（2022）『日本版WISC-V知能検査 実施・採点マニュアル』『理論・解釈マニュアル』日本文化科学社 <span class="small muted">（検査の購入者向け資料のためリンクなし）</span></li>
+    <li>日本版WISC-IV刊行委員会 訳編（2010）『日本版WISC-IV知能検査 理論・解釈マニュアル』日本文化科学社 <a href="https://ci.nii.ac.jp/ncid/BB09050530" target="_blank" rel="noopener">CiNii</a></li>
+    <li>日本版WISC-IV刊行委員会 編（2014）『日本版WISC-IV 補助マニュアル』日本文化科学社 <a href="https://ci.nii.ac.jp/ncid/BB17428863" target="_blank" rel="noopener">CiNii</a></li>
+  </ul>
+  <h3>解釈と支援を学ぶ</h3>
+  <ul class="refs">
+    <li>上野一彦・松田修・小林玄・木下智子（2015）『日本版WISC-IVによる発達障害のアセスメント：代表的な指標パターンの解釈と事例紹介』日本文化科学社 <a href="https://ndlsearch.ndl.go.jp/en/books/R100000002-I026105013" target="_blank" rel="noopener">国立国会図書館サーチ</a></li>
+    <li>Prifitera, A.・Saklofske, D. H.・Weiss, L. G. 編／上野一彦・バーンズ亀山静子 訳（2012）『WISC-IVの臨床的利用と解釈』日本文化科学社 <a href="https://ci.nii.ac.jp/ncid/BB09335574" target="_blank" rel="noopener">CiNii</a></li>
+    <li>Flanagan, D. P.・Alfonso, V. C.（2017）<i>Essentials of WISC-V Assessment</i>. Wiley <a href="https://ci.nii.ac.jp/ncid/BB23461240" target="_blank" rel="noopener">CiNii</a></li>
+  </ul>
+  <h3>保護者・先生向けの読みもの</h3>
+  <ul class="refs">
+    <li>熊上崇・星井純子・熊上藤子（2024）『子どもの心理検査・知能検査 保護者と先生のための100%活用ブック WISC-V、KABC-II対応版』合同出版 <a href="https://ndlsearch.ndl.go.jp/en/books/R100000002-I033627793" target="_blank" rel="noopener">国立国会図書館サーチ</a></li>
+    <li>文部科学省（2021）『障害のある子供の教育支援の手引〜子供たち一人一人の教育的ニーズを踏まえた学びの充実に向けて〜』 <a href="https://www.mext.go.jp/a_menu/shotou/tokubetu/material/1340250_00001.htm" target="_blank" rel="noopener">文部科学省</a></li>
+  </ul>`;
+}
+
+
+/* ===== イベント ===== */
+function renderAll(){renderInputs();renderResults();renderCompare();}
+document.addEventListener('compositionend',e=>{if(e.target&&e.target.id==='author')renderPreview();});
+document.addEventListener('input',e=>{const el=e.target;const r=cur();
+  if(el.id==='recLabel'||el.id==='recDate'){r[el.id==='recLabel'?'label':'date']=el.value;r.sample=false;save();
+    const chip=document.querySelector(`.chip[data-id="${CSS.escape(r.id)}"]`);if(chip)chip.firstChild.textContent=r.label||'無題';renderResults();renderCompare();return;}
+  if(el.dataset&&el.dataset.pk){r.pick=r.pick||{};r.pick[el.dataset.pk]=el.checked;save();
+    const dom=el.dataset.pk.split('|')[0];const d=el.closest('details');if(d){const c=d.querySelectorAll('input[data-pk]:checked').length;const sp=d.querySelector(`[data-cnt="${dom}"]`);if(sp)sp.textContent='PDFにのせる：'+c+'件';}
+    {const A2=analyze(r);const a=$('#nS'),b=$('#nH');if(a)a.textContent=pickedList(r,A2,'s').length;if(b)b.textContent=pickedList(r,A2,'h').length;}
+    renderPreview();return;}
+  if(el.id==='author'){r.author=el.value;state.author=el.value;save();if(!e.isComposing)renderPreview();return;}
+  if(el.id==='memo'){r.memoEdit=el.value;save();if(pvKind==='teacher')renderPreview();return;}
+  if(el.dataset&&el.dataset.g){const g=el.dataset.g;r[g]=r[g]||{};if(el.value==='')delete r[g][el.dataset.k];else r[g][el.dataset.k]=+el.value;r.sample=false;delete r.memoEdit;save();validateAll();renderResults();renderCompare();}
+});
+document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;
+  if(t.dataset.tab){document.querySelectorAll('nav.tabs button').forEach(b=>b.setAttribute('aria-selected',b===t));
+    ['mitate','image','hikaku','taiou','guide'].forEach(k=>$('#tab-'+k).hidden=k!==t.dataset.tab);if(t.dataset.tab==='image'){imgVer=null;renderImage();}fitPreview();return;}
+  if(t.dataset.iv){imgVer=t.dataset.iv;renderImage();return;}
+  if(t.dataset.cmp){const all=state.records.map(x=>x.id);let sel=(state.cmp||all).filter(id=>all.includes(id));const id=t.dataset.cmp;
+    if(sel.includes(id))sel=sel.filter(x=>x!==id);else if(sel.length<4)sel.push(id);state.cmp=sel;save();renderCompare();return;}
+  if(t.id==='btnCmpDemo'){if(!state.records.some(x=>x.id==='sample2'))state.records.push({id:'sample2',sample:true,label:'例：A-1（小2・サンプル）',date:'小2・6月',ver:'IV',sc:{FSIQ:90,VCI:100,PRI:103,WMI:82,PSI:80},sb:{}});
+    state.cmp=null;save();renderAll();return;}
+  if(t.id==='btnPickReset'){cur().pick={};save();renderResults();return;}
+  if(t.id==='btnPickNone'){const r=cur(),A=analyze(r);r.pick={};A.idx.forEach(i=>{const I=ideasOf(i.dom);['s','h'].forEach(sd=>(sd==='s'?SCH:HOM).forEach(sc=>I[sd][sc].forEach((x,k)=>r.pick[pkKey(i.dom,sd,sc,k)]=false)));});save();renderResults();return;}
+  if(t.dataset.pdf){exportPDF(t.dataset.pdf);return;}
+  if(t.id==='btnGuidePdf'){const v=imgVer||cur().ver;sheetToPDF(guideSheet(v),`WISC検査の説明_${VERS[v].label}.pdf`,m=>$('#gpPdfMsg').textContent=m);return;}
+  if(t.dataset.id){state.active=t.dataset.id;save();hideConfirm();renderAll();return;}
+  if(t.id==='btnNew'){const r={id:'r'+Date.now(),label:'',date:'',ver:cur().ver,sc:{},sb:{}};state.records.push(r);state.active=r.id;save();renderAll();$('#recLabel').focus();return;}
+  if(t.dataset.v){const r=cur();r.ver=t.dataset.v;save();renderAll();return;}
+  if(t.id==='btnDup'){const r=JSON.parse(JSON.stringify(cur()));r.id='r'+Date.now();r.label=(r.label||'無題')+'（複製）';r.sample=false;state.records.push(r);state.active=r.id;save();renderAll();return;}
+  if(t.id==='btnClear'){askConfirm('この記録の数値をすべて消しますか？',()=>{const r=cur();r.sc={};r.sb={};save();renderAll();});return;}
+  if(t.id==='btnDel'){askConfirm(`「${esc(cur().label||'無題')}」を削除しますか？元に戻せません。`,()=>{state.records=state.records.filter(x=>x.id!==state.active);
+    if(!state.records.length)state.records=[{id:'r'+Date.now(),label:'',date:'',ver:'V',sc:{},sb:{}}];state.active=state.records[0].id;save();renderAll();});return;}
+  if(t.id==='btnYes'){const f=pending;hideConfirm();f&&f();return;}
+  if(t.id==='btnNo'){hideConfirm();return;}
+  if(t.id==='btnCopy'){const r=cur(),A=analyze(r);const pt=picksText(r,A);copyText($('#memo').value+(pt?'\n'+pt:''),m=>$('#copyMsg').textContent=m);return;}
+});
+let pending=null;
+function askConfirm(msg,fn){pending=fn;const b=$('#confirmBox');b.innerHTML=`${msg}<div class="btnrow"><button class="btn danger" id="btnYes">はい</button><button class="btn" id="btnNo">やめる</button></div>`;b.hidden=false;}
+function hideConfirm(){pending=null;$('#confirmBox').hidden=true;}
+
+renderStatic();renderAll();
+if(cur().sb&&Object.keys(cur().sb).length)$('#subDetails').open=true;
+</script>
+
+</body>
+</html>
